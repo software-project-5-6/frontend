@@ -6,6 +6,7 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import App from "./App.jsx";
 import awsConfig from "./aws-exports";
 import { theme } from "./styles/theme.js";
+import "./styles/globals.css";
 
 // 🔹 Initialize AWS Amplify (Cognito setup)
 Amplify.configure(awsConfig);
@@ -18,5 +19,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <App />
       </BrowserRouter>
     </ThemeProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 );

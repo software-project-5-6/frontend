@@ -53,7 +53,7 @@ export default function Signup() {
     }
   };
 
-  // 🔹 2. Handle Confirmation (verify code)
+  //Handle Confirmation (verify code)
   const handleConfirm = async () => {
     setLoading(true);
     setMessage("");
