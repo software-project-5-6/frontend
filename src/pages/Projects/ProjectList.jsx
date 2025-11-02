@@ -161,7 +161,7 @@ export default function ProjectList() {
 
   // Filter projects based on search query
   const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    project.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Handle navigation to project details
@@ -232,7 +232,7 @@ export default function ProjectList() {
     console.log("Update project:", updatedProject);
     // Update project in state for now
     setProjects(
-      projects.map((p) => (p.id === updatedProject.id ? updatedProject : p)),
+      projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
     );
   };
 
@@ -322,7 +322,6 @@ export default function ProjectList() {
         sx={{
           borderRadius: 3,
           boxShadow: 3,
-          overflow: "hidden",
         }}
       >
         <Table>
