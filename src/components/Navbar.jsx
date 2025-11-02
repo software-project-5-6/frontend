@@ -18,7 +18,7 @@ import {
   Settings as SettingsIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
-import { fetchUserAttributes, signOut } from "aws-amplify/auth";
+import { fetchUserAttributes, signOut,fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import { gradients } from "../styles/theme";
 
@@ -27,6 +27,7 @@ export default function Navbar({ onMenuClick }) {
   const [userAttributes, setUserAttributes] = useState(null);
   const navigate = useNavigate();
 
+  
   useEffect(() => {
     fetchUser();
   }, []);
@@ -35,6 +36,14 @@ export default function Navbar({ onMenuClick }) {
     try {
       const attributes = await fetchUserAttributes();
       setUserAttributes(attributes);
+
+      const session = await fetchAuthSession();
+
+      // Get the ID token (contains user identity - use this for your backend)
+      const idToken = session.tokens?.idToken?.toString();
+      const accessToken = session.tokens?.accessToken?.toString();
+      console.log("ID Token:", idToken);
+      console.log("Access Token:", accessToken);
     } catch (error) {
       console.error("Error fetching user:", error);
     }

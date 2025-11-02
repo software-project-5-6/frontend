@@ -15,6 +15,9 @@ api.interceptors.request.use(
       // Get the ID token (contains user identity - use this for your backend)
       const idToken = session.tokens?.idToken?.toString();
 
+      
+      
+
       if (idToken) {
         config.headers.Authorization = `Bearer ${idToken}`;
       }

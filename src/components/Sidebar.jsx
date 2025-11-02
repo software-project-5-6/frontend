@@ -13,7 +13,7 @@ import {
 import {
   Folder as ProjectIcon,
   People as UsersIcon,
-  Dashboard as DashboardIcon,
+  AutoAwesome as AIIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { gradients } from "../styles/theme";
@@ -26,8 +26,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
 
   const menuItems = [
     {
-      text: "Dashboard",
-      icon: <DashboardIcon />,
+      text: "AI Assistant",
+      icon: <AIIcon />,
       path: "/",
     },
     {

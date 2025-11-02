@@ -1,56 +1,61 @@
-import React, { useState, useEffect } from "react";
-import { fetchUserAttributes, signOut } from "aws-amplify/auth";
-import { fetchAuthSession } from "aws-amplify/auth";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { fetchUserAttributes } from "aws-amplify/auth";
 import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
-  Grid,
-  Avatar,
-  Skeleton,
-  Button,
+  TextField,
   IconButton,
+  Avatar,
+  Paper,
+  Skeleton,
+  Fade,
+  Chip,
 } from "@mui/material";
 import {
-  Dashboard as DashboardIcon,
+  Send as SendIcon,
+  AutoAwesome as AIIcon,
   Person as PersonIcon,
-  Logout as LogoutIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../styles/theme";
 
 export const Dashboard = () => {
   const [userAttributes, setUserAttributes] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      type: "ai",
+      text: "Hello! I'm your AI assistant. How can I help you with your projects today?",
+      timestamp: new Date(),
+    },
+  ]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const fetchUser = async () => {
     try {
-      const session = await fetchAuthSession();
       const attributes = await fetchUserAttributes();
       setUserAttributes(attributes);
-      const id = session.tokens?.idToken?.toString();
-      console.log(id);
-      console.log("User attributes:", attributes);
     } catch (error) {
       console.error("Error fetching user:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate("/login", { replace: true });
-    } catch (error) {
-      console.error("Error signing out:", error);
     }
   };
 
@@ -75,183 +80,379 @@ export const Dashboard = () => {
     return displayName.charAt(0).toUpperCase();
   };
 
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isSending) return;
+
+    const userMessage = {
+      id: messages.length + 1,
+      type: "user",
+      text: inputMessage,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
+    setIsSending(true);
+
+    // Simulate AI response (replace with actual API call)
+    setTimeout(() => {
+      const aiResponse = {
+        id: messages.length + 2,
+        type: "ai",
+        text: getAIResponse(inputMessage),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+      setIsSending(false);
+    }, 1000);
+  };
+
+  const getAIResponse = (userInput) => {
+    const input = userInput.toLowerCase();
+
+    if (input.includes("project") || input.includes("projects")) {
+      return "I can help you manage your projects! You can create new projects, view existing ones, or analyze project data. What would you like to do?";
+    } else if (input.includes("help") || input.includes("what can you do")) {
+      return "I can assist you with:\n• Managing projects and tasks\n• Analyzing artifacts\n• Team collaboration\n• Generating reports\n• Answering questions about your work\n\nWhat would you like help with?";
+    } else if (input.includes("hello") || input.includes("hi")) {
+      return `Hello ${getDisplayName()}! How can I assist you today?`;
+    } else {
+      return "I understand you're asking about that. I'm here to help with your project management needs. Could you provide more details about what you'd like to know?";
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleNewChat = () => {
+    setMessages([
+      {
+        id: 1,
+        type: "ai",
+        text: "Hello! I'm your AI assistant. How can I help you with your projects today?",
+        timestamp: new Date(),
+      },
+    ]);
+  };
+
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Skeleton variant="rectangular" height={200} />
+      <Container
+        maxWidth="xl"
+        sx={{
+          height: "calc(100vh - 100px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height="80%"
+          sx={{ borderRadius: 3 }}
+        />
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg">
-      {/* Welcome Card */}
-      <Card
+    <Box
+      sx={{
+        height: "calc(100vh - 100px)",
+        display: "flex",
+        flexDirection: "column",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        px: 2,
+      }}
+    >
+      {/* Header */}
+      <Box
         sx={{
-          mb: 4,
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-          boxShadow: 3,
-          borderRadius: 3,
-          overflow: "visible",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          py: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
-        <CardContent sx={{ p: 4 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Avatar
+            sx={{
+              background: gradients.primary,
+              width: 40,
+              height: 40,
+            }}
+          >
+            <AIIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight={600}>
+              AI Assistant
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Always ready to help
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton
+          onClick={handleNewChat}
+          sx={{
+            background: gradients.primary,
+            color: "white",
+            "&:hover": {
+              background: gradients.primary,
+              opacity: 0.9,
+            },
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </Box>
+
+      {/* Messages Area */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          py: 3,
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+        }}
+      >
+        {messages.map((message, index) => (
+          <Fade in={true} key={message.id} timeout={500}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                alignItems: "flex-start",
+                flexDirection: message.type === "user" ? "row-reverse" : "row",
+              }}
+            >
+              {/* Avatar */}
+              <Avatar
+                sx={{
+                  background:
+                    message.type === "ai"
+                      ? gradients.primary
+                      : gradients.purple,
+                  width: 36,
+                  height: 36,
+                  flexShrink: 0,
+                }}
+              >
+                {message.type === "ai" ? <AIIcon /> : getInitials()}
+              </Avatar>
+
+              {/* Message Content */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  maxWidth: "70%",
+                  background:
+                    message.type === "ai"
+                      ? (theme) => theme.palette.grey[100]
+                      : gradients.primary,
+                  color: message.type === "ai" ? "text.primary" : "white",
+                  borderRadius: 2,
+                  borderTopLeftRadius: message.type === "ai" ? 0 : 2,
+                  borderTopRightRadius: message.type === "user" ? 0 : 2,
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {message.text}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mt: 1,
+                    opacity: 0.7,
+                  }}
+                >
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Typography>
+              </Paper>
+            </Box>
+          </Fade>
+        ))}
+
+        {/* Typing Indicator */}
+        {isSending && (
+          <Fade in={true}>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+              <Avatar
+                sx={{
+                  background: gradients.primary,
+                  width: 36,
+                  height: 36,
+                }}
+              >
+                <AIIcon />
+              </Avatar>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  background: (theme) => theme.palette.grey[100],
+                  borderRadius: 2,
+                  borderTopLeftRadius: 0,
+                }}
+              >
+                <Box sx={{ display: "flex", gap: 0.5 }}>
+                  <Box
+                    className="typing-dot"
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor: "primary.main",
+                      animation: "typing 1.4s infinite",
+                      "@keyframes typing": {
+                        "0%, 60%, 100%": { opacity: 0.3 },
+                        "30%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor: "primary.main",
+                      animation: "typing 1.4s infinite 0.2s",
+                      "@keyframes typing": {
+                        "0%, 60%, 100%": { opacity: 0.3 },
+                        "30%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor: "primary.main",
+                      animation: "typing 1.4s infinite 0.4s",
+                      "@keyframes typing": {
+                        "0%, 60%, 100%": { opacity: 0.3 },
+                        "30%": { opacity: 1 },
+                      },
+                    }}
+                  />
+                </Box>
+              </Paper>
+            </Box>
+          </Fade>
+        )}
+
+        <div ref={messagesEndRef} />
+      </Box>
+
+      {/* Input Area */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: 2,
+          borderRadius: 3,
+          background: (theme) => theme.palette.background.paper,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+          <TextField
+            ref={inputRef}
+            fullWidth
+            multiline
+            maxRows={4}
+            placeholder="Type your message here..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isSending}
+            variant="outlined"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                background: (theme) => theme.palette.background.default,
+              },
+            }}
+          />
+          <IconButton
+            onClick={handleSendMessage}
+            disabled={!inputMessage.trim() || isSending}
+            sx={{
+              background: gradients.primary,
+              color: "white",
+              width: 48,
+              height: 48,
+              "&:hover": {
+                background: gradients.primary,
+                opacity: 0.9,
+              },
+              "&:disabled": {
+                background: (theme) => theme.palette.action.disabledBackground,
+                color: (theme) => theme.palette.action.disabled,
+              },
+            }}
+          >
+            <SendIcon />
+          </IconButton>
+        </Box>
+
+        {/* Suggested Prompts */}
+        {messages.length === 1 && (
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
-              gap: 3,
+              gap: 1,
+              mt: 2,
               flexWrap: "wrap",
             }}
           >
-            {/* Avatar */}
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                background: gradients.primary,
-                fontSize: "2rem",
-                fontWeight: "bold",
-                boxShadow: (theme) =>
-                  `0 4px 20px ${theme.palette.primary.main}40`,
-              }}
-            >
-              {getInitials()}
-            </Avatar>
-
-            {/* Welcome Text */}
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  background: gradients.primary,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  mb: 1,
+            {[
+              "How can you help me?",
+              "Show my projects",
+              "What can you do?",
+            ].map((prompt, index) => (
+              <Chip
+                key={index}
+                label={prompt}
+                onClick={() => {
+                  setInputMessage(prompt);
+                  inputRef.current?.focus();
                 }}
-              >
-                Welcome back, {getDisplayName()}! 👋
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {userAttributes?.email ||
-                  "Here's what's happening with your projects today"}
-              </Typography>
-            </Box>
-
-            {/* Dashboard Icon */}
-            <DashboardIcon
-              sx={{
-                fontSize: 60,
-                color: "primary.main",
-                opacity: 0.3,
-              }}
-            />
+                sx={{
+                  cursor: "pointer",
+                  "&:hover": {
+                    background: gradients.primary,
+                    color: "white",
+                  },
+                }}
+              />
+            ))}
           </Box>
-        </CardContent>
-      </Card>
-
-      {/* Stats Cards */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              background: gradients.purple,
-              color: "white",
-              boxShadow: (theme) =>
-                `0 4px 20px ${theme.palette.primary.main}40`,
-              borderRadius: 3,
-              transition: "transform 0.3s",
-              "&:hover": {
-                transform: "translateY(-8px)",
-              },
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Total Projects
-              </Typography>
-              <Typography variant="h3" fontWeight="bold">
-                12
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              background: gradients.pink,
-              color: "white",
-              boxShadow: "0 4px 20px rgba(240, 147, 251, 0.4)",
-              borderRadius: 3,
-              transition: "transform 0.3s",
-              "&:hover": {
-                transform: "translateY(-8px)",
-              },
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Active Tasks
-              </Typography>
-              <Typography variant="h3" fontWeight="bold">
-                8
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              background: gradients.blue,
-              color: "white",
-              boxShadow: (theme) => `0 4px 20px ${theme.palette.info.main}40`,
-              borderRadius: 3,
-              transition: "transform 0.3s",
-              "&:hover": {
-                transform: "translateY(-8px)",
-              },
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Completed
-              </Typography>
-              <Typography variant="h3" fontWeight="bold">
-                24
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              background: gradients.green,
-              color: "white",
-              boxShadow: (theme) =>
-                `0 4px 20px ${theme.palette.success.main}40`,
-              borderRadius: 3,
-              transition: "transform 0.3s",
-              "&:hover": {
-                transform: "translateY(-8px)",
-              },
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Team Members
-              </Typography>
-              <Typography variant="h3" fontWeight="bold">
-                6
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Container>
+        )}
+      </Paper>
+    </Box>
   );
 };
