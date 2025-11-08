@@ -31,11 +31,7 @@ import ProjectTeamSection from "./components/ProjectTeamSection";
 import ProjectArtifactsSection from "./components/ProjectArtifactsSection";
 import InviteUserDialog from "./components/InviteUserDialog";
 import PendingInvitations from "./components/PendingInvitations";
-import {
-  getProjectById,
-  assignUserToProject,
-  removeUserFromProject,
-} from "../../api/projectApi";
+import { getProjectById, removeUserFromProject } from "../../api/projectApi";
 import { invitationApi } from "../../api/invitationApi";
 import { useAuth } from "../../context/AuthContext";
 

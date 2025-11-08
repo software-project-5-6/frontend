@@ -40,21 +40,6 @@ export const invitationApi = {
   },
 
   /**
-   * Get invitation details by token
-   * @param {string} token - Invitation token
-   * @returns {Promise} Invitation details
-   */
-  getInvitationByToken: async (token) => {
-    try {
-      const response = await api.get(`/invitations/token/${token}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching invitation:", error);
-      throw error;
-    }
-  },
-
-  /**
    * Accept project invitation
    * @param {string} token - Invitation token from email
    * @returns {Promise} API response

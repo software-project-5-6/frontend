@@ -76,22 +76,6 @@ export const deleteProject = async (projectId) => {
 };
 
 /**
- * Assign user to project
- * @param {string} projectId - Project ID
- * @param {Object} userRole - User role data
- * @returns {Promise} API response
- */
-export const assignUserToProject = async (projectId, userRole) => {
-  try {
-    const response = await api.post(`/projects/${projectId}/users`, userRole);
-    return response.data;
-  } catch (error) {
-    console.error("Error assigning user:", error);
-    throw error;
-  }
-};
-
-/**
  * Remove user from project
  * @param {string} projectId - Project ID
  * @param {string} userId - User ID
@@ -103,42 +87,6 @@ export const removeUserFromProject = async (projectId, userId) => {
     return response.data;
   } catch (error) {
     console.error("Error removing user:", error);
-    throw error;
-  }
-};
-
-/**
- * Send project invitation
- * @param {string} projectId - Project ID (4-character format: PA12, PB34, etc.)
- * @param {string} email - Invitee email address
- * @param {string} role - User role (MANAGER, CONTRIBUTOR, VIEWER)
- * @returns {Promise} API response
- */
-export const sendProjectInvitation = async (projectId, email, role) => {
-  try {
-    const response = await api.post("/invitations", {
-      projectId,
-      email,
-      role,
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error sending invitation:", error);
-    throw error;
-  }
-};
-
-/**
- * Accept project invitation
- * @param {string} token - Invitation token from email
- * @returns {Promise} API response
- */
-export const acceptProjectInvitation = async (token) => {
-  try {
-    const response = await api.post(`/invitations/accept?token=${token}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error accepting invitation:", error);
     throw error;
   }
 };
