@@ -55,7 +55,7 @@ export default function AuthLayout({ children }) {
               fontSize: { xs: "0.875rem", sm: "0.95rem" },
             }}
           >
-            Project & Software Management System
+            Project Space Management System
           </Typography>
         </Box>
 
