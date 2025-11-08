@@ -8,144 +8,53 @@ import {
   Tabs,
   Tab,
   Paper,
+  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Backdrop,
 } from "@mui/material";
 import {
   Info as InfoIcon,
   People as PeopleIcon,
   Description as DescriptionIcon,
+  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
-import EditProjectDialog from "./EditProjectDialog";
+import EditProjectDialog from "./components/EditProjectDialog";
 import ProjectDetailsHeader from "./components/ProjectDetailsHeader";
 import ProjectInfoCard from "./components/ProjectInfoCard";
 import ProjectStatsCards from "./components/ProjectStatsCards";
 import ProjectTeamSection from "./components/ProjectTeamSection";
 import ProjectArtifactsSection from "./components/ProjectArtifactsSection";
-import AddUserDialog from "./components/AddUserDialog";
-
-// Dummy projects data (same as ProjectList)
-const dummyProjects = [
-  {
-    id: 1,
-    name: "E-Commerce Platform",
-    artifactCount: 45,
-    clientEmail: "john.doe@ecommerce.com",
-    clientPhone: "+1 234-567-8900",
-    usersCount: 8,
-    createdDate: "2024-01-15",
-    status: "Active",
-    price: "$45,000",
-    description: "Full-stack e-commerce platform with payment integration",
-    users: [
-      {
-        id: 1,
-        name: "John Smith",
-        email: "john.smith@example.com",
-        role: "MANAGER",
-      },
-      {
-        id: 2,
-        name: "Sarah Johnson",
-        email: "sarah.j@example.com",
-        role: "CONTRIBUTOR",
-      },
-      {
-        id: 3,
-        name: "Mike Wilson",
-        email: "mike.w@example.com",
-        role: "CONTRIBUTOR",
-      },
-      {
-        id: 4,
-        name: "Emily Brown",
-        email: "emily.b@example.com",
-        role: "VIEWER",
-      },
-      {
-        id: 5,
-        name: "David Lee",
-        email: "david.l@example.com",
-        role: "CONTRIBUTOR",
-      },
-      {
-        id: 6,
-        name: "Lisa Garcia",
-        email: "lisa.g@example.com",
-        role: "VIEWER",
-      },
-      {
-        id: 7,
-        name: "Tom Anderson",
-        email: "tom.a@example.com",
-        role: "MANAGER",
-      },
-      {
-        id: 8,
-        name: "Anna Martinez",
-        email: "anna.m@example.com",
-        role: "CONTRIBUTOR",
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Mobile Banking App",
-    artifactCount: 32,
-    clientEmail: "sarah.smith@bank.com",
-    clientPhone: "+1 234-567-8901",
-    usersCount: 5,
-    createdDate: "2024-02-20",
-    status: "Active",
-    price: "$32,500",
-    description: "Secure mobile banking application for iOS and Android",
-    users: [
-      {
-        id: 1,
-        name: "Robert Taylor",
-        email: "robert.t@example.com",
-        role: "MANAGER",
-      },
-      {
-        id: 2,
-        name: "Jennifer White",
-        email: "jennifer.w@example.com",
-        role: "CONTRIBUTOR",
-      },
-      {
-        id: 3,
-        name: "Daniel Brown",
-        email: "daniel.b@example.com",
-        role: "CONTRIBUTOR",
-      },
-      {
-        id: 4,
-        name: "Michelle Davis",
-        email: "michelle.d@example.com",
-        role: "VIEWER",
-      },
-      {
-        id: 5,
-        name: "Kevin Moore",
-        email: "kevin.m@example.com",
-        role: "CONTRIBUTOR",
-      },
-    ],
-  },
-  // Add more dummy data as needed
-];
+import InviteUserDialog from "./components/InviteUserDialog";
+import PendingInvitations from "./components/PendingInvitations";
+import {
+  getProjectById,
+  assignUserToProject,
+  removeUserFromProject,
+} from "../../api/projectApi";
+import { invitationApi } from "../../api/invitationApi";
 
 export default function ProjectDetails() {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
   const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [inviteUserDialogOpen, setInviteUserDialogOpen] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
-  const [newUser, setNewUser] = useState({
-    name: "",
+  const [inviteData, setInviteData] = useState({
     email: "",
     role: "VIEWER",
   });
+  const [refreshInvitations, setRefreshInvitations] = useState(0);
 
   // Handle tab change
   const handleTabChange = (event, newValue) => {
@@ -154,16 +63,26 @@ export default function ProjectDetails() {
 
   // Fetch project details
   useEffect(() => {
-    // TODO: Replace with actual API call
-    const foundProject = dummyProjects.find(
-      (p) => p.id === parseInt(projectId)
-    );
-    if (foundProject) {
-      setProject(foundProject);
-    } else {
-      // If project not found, redirect back
-      navigate("/projects");
-    }
+    const fetchProjectDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getProjectById(projectId);
+        setProject(data);
+        console.log("Fetched project data:", data);
+      } catch (err) {
+        console.error("Error fetching project details:", err);
+        setError("Failed to load project details. Please try again later.");
+        // Optionally redirect back to projects list after a delay
+        setTimeout(() => {
+          navigate("/projects");
+        }, 3000);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectDetails();
   }, [projectId, navigate]);
 
   // Handle back navigation
@@ -180,62 +99,75 @@ export default function ProjectDetails() {
     setEditDialogOpen(false);
   };
 
-  const handleEditSave = (updatedProject) => {
-    // TODO: Implement API call to update project
-    console.log("Update project:", updatedProject);
-    setProject({ ...project, ...updatedProject });
+  const handleEditSave = async (updatedProject) => {
+    // Refresh project data after successful update
+    try {
+      const data = await getProjectById(projectId);
+      setProject(data);
+    } catch (err) {
+      console.error("Error refreshing project:", err);
+      setError("Failed to refresh project details.");
+    }
   };
 
-  // Handle add user
-  const handleAddUserOpen = () => {
-    setAddUserDialogOpen(true);
+  // Handle invite user
+  const handleInviteOpen = () => {
+    setInviteUserDialogOpen(true);
   };
 
-  const handleAddUserClose = () => {
-    setAddUserDialogOpen(false);
-    setNewUser({ name: "", email: "", role: "VIEWER" });
+  const handleInviteClose = () => {
+    setInviteUserDialogOpen(false);
+    setInviteData({ email: "", role: "VIEWER" });
   };
 
-  const handleAddUser = () => {
-    // TODO: Implement API call to add user to project
-    const newUserWithId = {
-      ...newUser,
-      id: project.users.length + 1,
-    };
-    console.log("Add user to project:", newUserWithId);
+  const handleSendInvite = async () => {
+    try {
+      // Show loading state
+      setSendingInvite(true);
 
-    setProject({
-      ...project,
-      users: [...project.users, newUserWithId],
-      usersCount: project.users.length + 1,
-    });
+      // Close dialog immediately for better UX
+      handleInviteClose();
 
-    handleAddUserClose();
+      // Send invitation in background
+      await invitationApi.sendInvitation(Number(projectId), {
+        email: inviteData.email,
+        role: inviteData.role,
+      });
+      console.log("Invitation sent:", inviteData);
+
+      // Refresh project data to get updated team list (in background)
+      const data = await getProjectById(projectId);
+      setProject(data);
+
+      // Trigger refresh of pending invitations
+      setRefreshInvitations((prev) => prev + 1);
+
+      // Hide loading state
+      setSendingInvite(false);
+
+      // Show success dialog
+      setSuccessDialogOpen(true);
+    } catch (err) {
+      console.error("Error sending invitation to project:", err);
+      setSendingInvite(false);
+      setError("Failed to send invitation. Please try again.");
+    }
+  };
+
+  const handleSuccessDialogClose = () => {
+    setSuccessDialogOpen(false);
   };
 
   // Handle remove user
-  const handleRemoveUser = (userId) => {
-    // TODO: Implement API call to remove user from project
-    console.log("Remove user:", userId);
-
-    setProject({
-      ...project,
-      users: project.users.filter((u) => u.id !== userId),
-      usersCount: project.users.length - 1,
-    });
-  };
-
-  // Get status color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Active":
-        return "success";
-      case "Pending":
-        return "warning";
-      case "Completed":
-        return "info";
-      default:
-        return "default";
+  const handleRemoveUser = async (userId) => {
+    try {
+      await removeUserFromProject(projectId, userId);
+      // Refresh project data to get updated team list
+      const data = await getProjectById(projectId);
+      setProject(data);
+    } catch (err) {
+      console.error("Error removing user from project:", err);
+      setError("Failed to remove user from project. Please try again.");
     }
   };
 
@@ -263,12 +195,42 @@ export default function ProjectDetails() {
       .slice(0, 2);
   };
 
+  if (loading) {
+    return (
+      <Container maxWidth="xl">
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "60vh",
+          }}
+        >
+          <CircularProgress size={60} />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+        <Typography variant="body2" color="text.secondary" align="center">
+          Redirecting to projects list...
+        </Typography>
+      </Container>
+    );
+  }
+
   if (!project) {
     return (
       <Container maxWidth="xl">
         <Box sx={{ py: 4, textAlign: "center" }}>
           <Typography variant="h6" color="text.secondary">
-            Loading project details...
+            Project not found
           </Typography>
         </Box>
       </Container>
@@ -279,6 +241,13 @@ export default function ProjectDetails() {
     <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Header Component */}
       <ProjectDetailsHeader onBack={handleBack} onEdit={handleEditOpen} />
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Statistics Cards Row - Always visible */}
       <Box sx={{ mb: 3 }}>
@@ -357,10 +326,7 @@ export default function ProjectDetails() {
           {/* Tab 0: Project Details */}
           {currentTab === 0 && (
             <Box>
-              <ProjectInfoCard
-                project={project}
-                getStatusColor={getStatusColor}
-              />
+              <ProjectInfoCard project={project} />
             </Box>
           )}
 
@@ -369,10 +335,16 @@ export default function ProjectDetails() {
             <Box>
               <ProjectTeamSection
                 project={project}
-                onAddUserOpen={handleAddUserOpen}
+                onInviteOpen={handleInviteOpen}
                 onRemoveUser={handleRemoveUser}
                 getRoleColor={getRoleColor}
                 getInitials={getInitials}
+              />
+
+              {/* Pending Invitations Section */}
+              <PendingInvitations
+                projectId={projectId}
+                refreshTrigger={refreshInvitations}
               />
             </Box>
           )}
@@ -391,17 +363,81 @@ export default function ProjectDetails() {
         open={editDialogOpen}
         onClose={handleEditClose}
         project={project}
-        onSave={handleEditSave}
+        onUpdate={handleEditSave}
       />
 
-      {/* Add User Dialog */}
-      <AddUserDialog
-        open={addUserDialogOpen}
-        onClose={handleAddUserClose}
-        newUser={newUser}
-        onUserChange={setNewUser}
-        onAddUser={handleAddUser}
+      {/* Invite User Dialog */}
+      <InviteUserDialog
+        open={inviteUserDialogOpen}
+        onClose={handleInviteClose}
+        inviteData={inviteData}
+        onInviteDataChange={setInviteData}
+        onSendInvite={handleSendInvite}
       />
+
+      {/* Loading Backdrop */}
+      <Backdrop
+        sx={{
+          color: "#fff",
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backdropFilter: "blur(3px)",
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+        }}
+        open={sendingInvite}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" color="inherit">
+            Sending Invitation...
+          </Typography>
+          <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
+            Please wait while we send the invitation
+          </Typography>
+        </Box>
+      </Backdrop>
+
+      {/* Success Dialog */}
+      <Dialog
+        open={successDialogOpen}
+        onClose={handleSuccessDialogClose}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            color: "success.main",
+          }}
+        >
+          <CheckCircleIcon sx={{ fontSize: 32 }} />
+          Invitation Sent Successfully!
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" color="text.secondary">
+            The invitation has been sent successfully. The user will receive an
+            email with instructions to join the project.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            variant="contained"
+            onClick={handleSuccessDialogClose}
+            fullWidth
+            color="success"
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

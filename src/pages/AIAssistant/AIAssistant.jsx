@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchUserAttributes } from "aws-amplify/auth";
 import {
   Box,
   Container,
@@ -19,10 +18,10 @@ import {
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../styles/theme";
+import { useAuth } from "../../context/AuthContext";
 
-export const Dashboard = () => {
-  const [userAttributes, setUserAttributes] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const AIAssistant = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -37,10 +36,6 @@ export const Dashboard = () => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
@@ -48,23 +43,12 @@ export const Dashboard = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchUser = async () => {
-    try {
-      const attributes = await fetchUserAttributes();
-      setUserAttributes(attributes);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getDisplayName = () => {
-    if (userAttributes?.name) {
-      return userAttributes.name;
+    if (user?.username) {
+      return user.username;
     }
-    if (userAttributes?.email) {
-      return userAttributes.email.split("@")[0];
+    if (user?.userId) {
+      return user.userId.split("-")[0];
     }
     return "User";
   };
@@ -138,27 +122,6 @@ export const Dashboard = () => {
       },
     ]);
   };
-
-  if (loading) {
-    return (
-      <Container
-        maxWidth="xl"
-        sx={{
-          height: "calc(100vh - 100px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Skeleton
-          variant="rectangular"
-          width="100%"
-          height="80%"
-          sx={{ borderRadius: 3 }}
-        />
-      </Container>
-    );
-  }
 
   return (
     <Box

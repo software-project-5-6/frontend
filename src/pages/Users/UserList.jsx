@@ -19,6 +19,7 @@ import {
   Fab,
   CircularProgress,
   Alert,
+  Avatar,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -28,21 +29,19 @@ import {
   Delete as DeleteIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  Folder as FolderIcon,
-  AttachFile as AttachFileIcon,
-  People as PeopleIcon,
+  Person as PersonIcon,
+  AdminPanelSettings as AdminIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../styles/theme";
-import ViewProjectDialog from "./components/ViewProjectDialog";
-import EditProjectDialog from "./components/EditProjectDialog";
-import DeleteProjectDialog from "./components/DeleteProjectDialog";
-import CreateProjectDialog from "./components/CreateProjectDialog";
-import { getAllProjects, deleteProject } from "../../api/projectApi";
 import { ShowForAdmin } from "../../components/RoleBasedComponents";
+import { getAllUsers, deleteUser } from "../../api/userApi";
+import ViewUserDialog from "./components/ViewUserDialog";
+import EditUserDialog from "./components/EditUserDialog";
+import DeleteUserDialog from "./components/DeleteUserDialog";
 
-export default function ProjectList() {
+export default function UserList() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,79 +49,81 @@ export default function ProjectList() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  // Fetch projects on component mount
+  // Fetch users on component mount
   useEffect(() => {
-    fetchProjects();
+    fetchUsers();
   }, []);
 
-  const fetchProjects = async () => {
+  const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllProjects();
-      setProjects(data);
+      const data = await getAllUsers();
+      setUsers(data);
     } catch (err) {
-      console.error("Error fetching projects:", err);
-      setError("Failed to load projects. Please try again later.");
+      console.error("Error fetching users:", err);
+      setError("Failed to load users. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter projects based on search query
-  const filteredProjects = projects.filter((project) =>
-    project.projectName?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter users based on search query
+  const filteredUsers = users.filter(
+    (user) =>
+      user.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle navigation to project details
-  const handleProjectClick = (projectId) => {
-    navigate(`/projects/${projectId}`);
+  // Handle navigation to user details
+  const handleUserClick = (userId) => {
+    navigate(`/users/${userId}`);
   };
 
   // Handle View Dialog
-  const handleViewOpen = (project) => {
-    setSelectedProject(project);
+  const handleViewOpen = (user) => {
+    setSelectedUser(user);
     setViewDialogOpen(true);
   };
 
   const handleViewClose = () => {
     setViewDialogOpen(false);
-    setSelectedProject(null);
+    setSelectedUser(null);
   };
 
   // Handle Edit Dialog
-  const handleEditOpen = (project) => {
-    setSelectedProject(project);
+  const handleEditOpen = (user) => {
+    setSelectedUser(user);
     setEditDialogOpen(true);
   };
 
   const handleEditClose = () => {
     setEditDialogOpen(false);
-    setSelectedProject(null);
+    setSelectedUser(null);
   };
 
   // Handle Delete Dialog
-  const handleDeleteOpen = (project) => {
-    setSelectedProject(project);
+  const handleDeleteOpen = (user) => {
+    setSelectedUser(user);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteClose = () => {
     setDeleteDialogOpen(false);
-    setSelectedProject(null);
+    setSelectedUser(null);
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      await deleteProject(selectedProject.id);
-      // Remove project from state after successful deletion
-      setProjects(projects.filter((p) => p.id !== selectedProject.id));
+      await deleteUser(selectedUser.id);
+      // Remove user from state after successful deletion
+      setUsers(users.filter((u) => u.id !== selectedUser.id));
       handleDeleteClose();
     } catch (err) {
-      console.error("Error deleting project:", err);
-      setError("Failed to delete project. Please try again.");
+      console.error("Error deleting user:", err);
+      setError("Failed to delete user. Please try again.");
     }
   };
 
@@ -135,15 +136,50 @@ export default function ProjectList() {
     setCreateDialogOpen(false);
   };
 
-  const handleCreateProject = (newProject) => {
-    // Refresh the projects list after creation
-    fetchProjects();
+  const handleCreateUser = (newUser) => {
+    // Refresh the users list after creation
+    fetchUsers();
   };
 
   // Handle Edit Save
-  const handleEditSave = (updatedProject) => {
-    // Refresh the projects list after update
-    fetchProjects();
+  const handleEditSave = (updatedUser) => {
+    // Refresh the users list after update
+    fetchUsers();
+  };
+
+  // Get role color
+  const getRoleColor = (role) => {
+    switch (role) {
+      case "APP_ADMIN":
+        return "error";
+      case "APP_USER":
+        return "primary";
+      default:
+        return "default";
+    }
+  };
+
+  // Get role label
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case "APP_ADMIN":
+        return "Admin";
+      case "APP_USER":
+        return "User";
+      default:
+        return role;
+    }
+  };
+
+  // Get initials for avatar
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -151,10 +187,10 @@ export default function ProjectList() {
       {/* Header Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} color="text.primary" mb={1}>
-          Projects
+          Users
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Manage and track all your projects
+          Manage and track all system users
         </Typography>
       </Box>
 
@@ -178,7 +214,7 @@ export default function ProjectList() {
       >
         {/* Search Field - Top Left */}
         <TextField
-          placeholder="Search projects..."
+          placeholder="Search users..."
           variant="outlined"
           size="small"
           value={searchQuery}
@@ -197,31 +233,9 @@ export default function ProjectList() {
             ),
           }}
         />
-
-        {/* Add Project Button - Top Right (Admin Only) */}
-        <ShowForAdmin>
-          <Tooltip title="Create New Project" arrow>
-            <Fab
-              color="primary"
-              aria-label="add"
-              size="medium"
-              onClick={handleCreateOpen}
-              sx={{
-                background: gradients.primary,
-                "&:hover": {
-                  background: gradients.primary,
-                  transform: "scale(1.05)",
-                },
-                transition: "transform 0.2s",
-              }}
-            >
-              <AddIcon />
-            </Fab>
-          </Tooltip>
-        </ShowForAdmin>
       </Box>
 
-      {/* Projects Table */}
+      {/* Users Table */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress />
@@ -245,34 +259,20 @@ export default function ProjectList() {
                   sx={{ color: "white", fontWeight: 600 }}
                   align="center"
                 >
-                  Project ID
+                  User ID
                 </TableCell>
                 <TableCell sx={{ color: "white", fontWeight: 600 }}>
-                  Project Name
+                  User Name
+                </TableCell>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>
+                  Contact Information
                 </TableCell>
                 <TableCell
                   sx={{ color: "white", fontWeight: 600 }}
                   align="center"
                 >
-                  Team Members
+                  Role
                 </TableCell>
-                <TableCell
-                  sx={{ color: "white", fontWeight: 600 }}
-                  align="center"
-                >
-                  Artifact Count
-                </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600 }}>
-                  Client Reference
-                </TableCell>
-                <ShowForAdmin>
-                  <TableCell
-                    sx={{ color: "white", fontWeight: 600 }}
-                    align="center"
-                  >
-                    Price
-                  </TableCell>
-                </ShowForAdmin>
                 <TableCell
                   sx={{ color: "white", fontWeight: 600 }}
                   align="center"
@@ -282,9 +282,9 @@ export default function ProjectList() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredProjects.map((project, index) => (
+              {filteredUsers.map((user, index) => (
                 <TableRow
-                  key={project.id}
+                  key={user.id}
                   sx={{
                     "&:hover": {
                       bgcolor: "action.hover",
@@ -293,23 +293,23 @@ export default function ProjectList() {
                       index % 2 === 0 ? "background.paper" : "action.hover",
                   }}
                 >
-                  {/* Project ID */}
+                  {/* User ID */}
                   <TableCell align="center">
                     <Chip
-                      label={`#${project.id}`}
+                      label={`#${user.id}`}
                       size="small"
                       color="default"
                       variant="outlined"
                     />
                   </TableCell>
 
-                  {/* Project Name */}
+                  {/* User Name */}
                   <TableCell>
                     <Box
                       sx={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 1,
+                        gap: 1.5,
                         cursor: "pointer",
                         "&:hover": {
                           "& .MuiTypography-root": {
@@ -318,79 +318,58 @@ export default function ProjectList() {
                           },
                         },
                       }}
-                      onClick={() => handleProjectClick(project.id)}
+                      onClick={() => handleUserClick(user.id)}
                     >
-                      <FolderIcon color="primary" />
+                      <Avatar
+                        sx={{
+                          bgcolor: "primary.main",
+                          width: 36,
+                          height: 36,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        {getInitials(user.fullName)}
+                      </Avatar>
                       <Typography variant="body2" fontWeight={600}>
-                        {project.projectName}
+                        {user.fullName}
                       </Typography>
                     </Box>
                   </TableCell>
 
-                  {/* Team Members Count */}
-                  <TableCell align="center">
-                    <Chip
-                      icon={<PeopleIcon />}
-                      label={project.userCount || 0}
-                      size="small"
-                      color="secondary"
-                      variant="outlined"
-                    />
-                  </TableCell>
-
-                  {/* Artifact Count */}
-                  <TableCell align="center">
-                    <Chip
-                      icon={<AttachFileIcon />}
-                      label={project.artifactCount || 0}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                  </TableCell>
-
-                  {/* Client Reference */}
+                  {/* Contact Information */}
                   <TableCell>
-                    <Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          mb: 0.5,
-                        }}
-                      >
-                        <EmailIcon
-                          sx={{ fontSize: 14, color: "text.secondary" }}
-                        />
-                        <Typography variant="body2" fontSize="0.8rem">
-                          {project.clientEmail || "N/A"}
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                      >
-                        <PhoneIcon
-                          sx={{ fontSize: 14, color: "text.secondary" }}
-                        />
-                        <Typography variant="body2" fontSize="0.8rem">
-                          {project.clientPhone || "N/A"}
-                        </Typography>
-                      </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                      }}
+                    >
+                      <EmailIcon
+                        sx={{ fontSize: 14, color: "text.secondary" }}
+                      />
+                      <Typography variant="body2" fontSize="0.8rem">
+                        {user.email || "N/A"}
+                      </Typography>
                     </Box>
                   </TableCell>
 
-                  {/* Price (Admin Only) */}
-                  <ShowForAdmin>
-                    <TableCell align="center">
-                      <Chip
-                        label={`$${project.price?.toFixed(2) || "0.00"}`}
-                        size="small"
-                        color="success"
-                        variant="filled"
-                      />
-                    </TableCell>
-                  </ShowForAdmin>
+                  {/* Role */}
+                  <TableCell align="center">
+                    <Chip
+                      icon={
+                        user.globalRole === "APP_ADMIN" ? (
+                          <AdminIcon />
+                        ) : (
+                          <PersonIcon />
+                        )
+                      }
+                      label={getRoleLabel(user.globalRole)}
+                      size="small"
+                      color={getRoleColor(user.globalRole)}
+                      variant="filled"
+                    />
+                  </TableCell>
 
                   {/* Actions */}
                   <TableCell align="center">
@@ -406,7 +385,7 @@ export default function ProjectList() {
                         <IconButton
                           size="small"
                           color="info"
-                          onClick={() => handleViewOpen(project)}
+                          onClick={() => handleViewOpen(user)}
                           sx={{
                             "&:hover": {
                               bgcolor: "info.light",
@@ -418,32 +397,13 @@ export default function ProjectList() {
                         </IconButton>
                       </Tooltip>
 
-                      {/* Edit Button - Admin Only */}
-                      <ShowForAdmin>
-                        <Tooltip title="Edit Project" arrow>
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => handleEditOpen(project)}
-                            sx={{
-                              "&:hover": {
-                                bgcolor: "warning.light",
-                                color: "white",
-                              },
-                            }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </ShowForAdmin>
-
                       {/* Delete Button - Admin Only */}
                       <ShowForAdmin>
-                        <Tooltip title="Delete Project" arrow>
+                        <Tooltip title="Delete User" arrow>
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => handleDeleteOpen(project)}
+                            onClick={() => handleDeleteOpen(user)}
                             sx={{
                               "&:hover": {
                                 bgcolor: "error.light",
@@ -465,10 +425,10 @@ export default function ProjectList() {
       )}
 
       {/* No Results Message */}
-      {!loading && filteredProjects.length === 0 && (
+      {!loading && filteredUsers.length === 0 && (
         <Box sx={{ textAlign: "center", py: 8 }}>
           <Typography variant="h6" color="text.secondary">
-            No projects found
+            No users found
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Try adjusting your search query
@@ -477,31 +437,32 @@ export default function ProjectList() {
       )}
 
       {/* Dialog Components */}
-      <ViewProjectDialog
+      <ViewUserDialog
         open={viewDialogOpen}
         onClose={handleViewClose}
-        project={selectedProject}
+        user={selectedUser}
       />
 
-      <EditProjectDialog
+      <EditUserDialog
         open={editDialogOpen}
         onClose={handleEditClose}
-        project={selectedProject}
+        user={selectedUser}
         onSave={handleEditSave}
       />
 
-      <DeleteProjectDialog
+      <DeleteUserDialog
         open={deleteDialogOpen}
         onClose={handleDeleteClose}
-        project={selectedProject}
+        user={selectedUser}
         onConfirm={handleDeleteConfirm}
       />
 
-      <CreateProjectDialog
+      {/* TODO: Add CreateUserDialog when needed */}
+      {/* <CreateUserDialog
         open={createDialogOpen}
         onClose={handleCreateClose}
-        onCreate={handleCreateProject}
-      />
+        onCreate={handleCreateUser}
+      /> */}
     </Container>
   );
 }

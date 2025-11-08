@@ -15,9 +15,9 @@ import { gradients } from "../../../styles/theme";
 export default function AddUserDialog({
   open,
   onClose,
-  newUser,
-  onUserChange,
-  onAddUser,
+  inviteData,
+  onInviteDataChange,
+  onSendInvite,
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -28,34 +28,23 @@ export default function AddUserDialog({
         }}
       >
         <Typography variant="h6" fontWeight={600}>
-          Add User to Project
+          Invite User to Project
         </Typography>
       </DialogTitle>
       <DialogContent dividers sx={{ pt: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
-              label="User Name"
-              fullWidth
-              value={newUser.name}
-              onChange={(e) =>
-                onUserChange({ ...newUser, name: e.target.value })
-              }
-              placeholder="Enter user name"
-              required
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
               label="Email"
               type="email"
               fullWidth
-              value={newUser.email}
+              value={inviteData.email}
               onChange={(e) =>
-                onUserChange({ ...newUser, email: e.target.value })
+                onInviteDataChange({ ...inviteData, email: e.target.value })
               }
               placeholder="user@example.com"
               required
+              helperText="User will receive an invitation email to join the project"
             />
           </Grid>
           <Grid item xs={12}>
@@ -63,9 +52,9 @@ export default function AddUserDialog({
               label="Role"
               select
               fullWidth
-              value={newUser.role}
+              value={inviteData.role}
               onChange={(e) =>
-                onUserChange({ ...newUser, role: e.target.value })
+                onInviteDataChange({ ...inviteData, role: e.target.value })
               }
             >
               <MenuItem value="MANAGER">Manager</MenuItem>
@@ -80,12 +69,12 @@ export default function AddUserDialog({
           Cancel
         </Button>
         <Button
-          onClick={onAddUser}
+          onClick={onSendInvite}
           variant="contained"
           color="primary"
-          disabled={!newUser.name || !newUser.email}
+          disabled={!inviteData.email}
         >
-          Add User
+          Send Invitation
         </Button>
       </DialogActions>
     </Dialog>
