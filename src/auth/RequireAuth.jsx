@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "aws-amplify/auth";
 import { CircularProgress, Box } from "@mui/material";
 
 export default function RequireAuth({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
@@ -37,5 +38,11 @@ export default function RequireAuth({ children }) {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    // Save the intended destination (including search params for invitation token)
+    const intendedPath = location.pathname + location.search;
+    return <Navigate to="/login" state={{ from: intendedPath }} replace />;
+  }
+
+  return children;
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { signIn } from "aws-amplify/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -21,6 +21,7 @@ export default function Login() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { refreshAuth } = useAuth();
 
   const handleLogin = async () => {
@@ -28,22 +29,59 @@ export default function Login() {
     setMessage("");
     try {
       // 🔹 AWS Cognito Authentication
-      const { isSignedIn, nextStep } = await signIn({
+      const result = await signIn({
         username: email,
         password: password,
       });
 
-      if (isSignedIn) {
+      if (result.isSignedIn) {
         setMessage("✅ Login successful!");
 
         // Refresh auth context to load user role before navigation
         await refreshAuth();
 
-        // Use navigate instead of window.location.href for better React routing
-        navigate("/", { replace: true });
+        // Check if user was trying to access a specific page (like invitation)
+        const intendedDestination = location.state?.from;
+
+        if (intendedDestination) {
+          // Redirect to the intended destination (e.g., /invite/accept?token=xyz)
+          navigate(intendedDestination, { replace: true });
+        } else {
+          // Default: go to home page
+          navigate("/", { replace: true });
+        }
+      } else if (result.nextStep) {
+        // Check if user needs to confirm signup
+        if (result.nextStep.signInStep === "CONFIRM_SIGN_UP") {
+          setMessage(
+            "⚠️ Your account is not verified. Redirecting to verification page..."
+          );
+          setTimeout(() => {
+            navigate("/confirm-signup", { state: { email, fromLogin: true } });
+          }, 2000);
+        }
       }
     } catch (error) {
-      setMessage("❌ " + error.message);
+      // Check if user needs to confirm their account
+      // AWS Cognito can throw this with different error names/codes
+      if (
+        error.name === "UserNotConfirmedException" ||
+        error.code === "UserNotConfirmedException" ||
+        error.message?.includes("User is not confirmed") ||
+        error.message?.includes("not confirmed")
+      ) {
+        setMessage(
+          "⚠️ Your account is not verified. Redirecting to verification page..."
+        );
+        setTimeout(() => {
+          navigate("/confirm-signup", { state: { email, fromLogin: true } });
+        }, 2000);
+      } else {
+        setMessage(
+          "❌ " +
+            (error.message || "Login failed. Please check your credentials.")
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -69,7 +107,9 @@ export default function Login() {
         color="text.secondary"
         sx={{ mb: 2.5, fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
       >
-        Sign in to your account to continue
+        {location.state?.from?.includes("/invite/accept")
+          ? "Please sign in to accept your project invitation"
+          : "Sign in to your account to continue"}
       </Typography>
 
       <TextField

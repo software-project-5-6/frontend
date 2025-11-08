@@ -227,8 +227,6 @@
 //   );
 // }
 
-
-
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -260,6 +258,8 @@ export default function InvitationAccept() {
   const [inviteState, setInviteState] = useState({
     status: "loading", // 'loading' | 'success' | 'already-member' | 'expired' | 'error'
     message: "",
+    projectId: null, // Store project ID for direct navigation
+    projectName: null, // Store project name for display
   });
 
   useEffect(() => {
@@ -288,13 +288,18 @@ export default function InvitationAccept() {
         if (response.alreadyMember) {
           setInviteState({
             status: "already-member",
-            message: response.message || "You are already a member of this project.",
+            message:
+              response.message || "You are already a member of this project.",
+            projectId: response.projectId,
+            projectName: response.projectName,
           });
         } else {
           // Success case - user was added to project
           setInviteState({
             status: "success",
             message: response.message || "Invitation accepted successfully!",
+            projectId: response.projectId,
+            projectName: response.projectName,
           });
         }
       } catch (err) {
@@ -359,19 +364,43 @@ export default function InvitationAccept() {
               Welcome Aboard! 🎉
             </Typography>
             <Alert severity="success" sx={{ mb: 3 }}>
-              You have been successfully added to the project!
+              {inviteState.message}
+              {inviteState.projectName && (
+                <Box sx={{ mt: 1, fontWeight: 600 }}>
+                  Project: {inviteState.projectName}
+                </Box>
+              )}
             </Alert>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Click the button below to view your projects.
+              You can now access this project and collaborate with your team.
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => navigate("/projects")}
-              size="large"
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
             >
-              Go to Projects
-            </Button>
+              {inviteState.projectId && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate(`/projects/${inviteState.projectId}`)}
+                  size="large"
+                >
+                  Go to Project
+                </Button>
+              )}
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => navigate("/projects")}
+                size="large"
+              >
+                View All Projects
+              </Button>
+            </Box>
           </Box>
         );
 
@@ -384,17 +413,40 @@ export default function InvitationAccept() {
             </Typography>
             <Alert severity="info" sx={{ mb: 3 }}>
               {inviteState.message}
+              {inviteState.projectName && (
+                <Box sx={{ mt: 1, fontWeight: 600 }}>
+                  Project: {inviteState.projectName}
+                </Box>
+              )}
             </Alert>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               You can view this project in your projects list.
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => navigate("/projects")}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
             >
-              Go to Projects
-            </Button>
+              {inviteState.projectId && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate(`/projects/${inviteState.projectId}`)}
+                >
+                  Go to Project
+                </Button>
+              )}
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => navigate("/projects")}
+              >
+                View All Projects
+              </Button>
+            </Box>
           </Box>
         );
 

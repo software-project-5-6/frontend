@@ -109,7 +109,7 @@ export const removeUserFromProject = async (projectId, userId) => {
 
 /**
  * Send project invitation
- * @param {number} projectId - Project ID
+ * @param {string} projectId - Project ID (4-character format: PA12, PB34, etc.)
  * @param {string} email - Invitee email address
  * @param {string} role - User role (MANAGER, CONTRIBUTOR, VIEWER)
  * @returns {Promise} API response

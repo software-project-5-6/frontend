@@ -126,9 +126,9 @@ export default function EditProjectDialog({
       );
       console.log("Project updated successfully:", response);
 
-      // Call the onUpdate callback if provided
+      // Call the onUpdate callback if provided and wait for it to complete
       if (onUpdate) {
-        onUpdate(response);
+        await onUpdate(response);
       }
 
       onClose();
@@ -418,25 +418,7 @@ export default function EditProjectDialog({
               </Stack>
             </Box>
 
-            {/* Info Note */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: (theme) => alpha(theme.palette.warning.main, 0.04),
-                border: (theme) =>
-                  `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-              }}
-            >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontSize="0.813rem"
-              >
-                💡 Changes will be saved immediately and reflected across the
-                system
-              </Typography>
-            </Box>
+            
           </Stack>
         </Box>
 

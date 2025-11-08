@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../auth/Login.jsx";
 import Signup from "../auth/Signup.jsx";
+import ConfirmSignup from "../auth/ConfirmSignup.jsx";
 import ForgotPassword from "../auth/ForgotPassword.jsx";
 import { AIAssistant } from "../pages/AIAssistant/AIAssistant.jsx";
 import ProjectList from "../pages/Projects/ProjectList.jsx";
@@ -31,6 +32,14 @@ export default function AppRouter() {
         element={
           <AuthLayout>
             <Signup />
+          </AuthLayout>
+        }
+      />
+      <Route
+        path="/confirm-signup"
+        element={
+          <AuthLayout>
+            <ConfirmSignup />
           </AuthLayout>
         }
       />

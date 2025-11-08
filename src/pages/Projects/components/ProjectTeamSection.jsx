@@ -434,14 +434,21 @@ const ProjectTeamSection = ({
                           {getInitials(member.fullName || member.email)}
                         </Avatar>
                         <Box>
-                          <Typography variant="body2" fontWeight={600}>
-                            {member.fullName || "No Name"}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Typography variant="body2" fontWeight={600}>
+                              {member.fullName || "No Name"}
+                            </Typography>
                             {isCurrentUser && (
                               <Chip
                                 label="You"
                                 size="small"
                                 sx={{
-                                  ml: 1,
                                   height: 18,
                                   fontSize: "0.65rem",
                                   bgcolor: "primary.light",
@@ -449,7 +456,7 @@ const ProjectTeamSection = ({
                                 }}
                               />
                             )}
-                          </Typography>
+                          </Box>
                         </Box>
                       </Box>
                     </TableCell>

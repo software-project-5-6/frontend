@@ -7,7 +7,7 @@ import api from "./axiosConfig";
 export const invitationApi = {
   /**
    * Send invitation to user
-   * @param {number} projectId - Project ID
+   * @param {string} projectId - Project ID (4-character format: PA12, PB34, etc.)
    * @param {Object} inviteRequest - { email, role }
    * @returns {Promise} API response
    */
@@ -26,7 +26,7 @@ export const invitationApi = {
 
   /**
    * Get pending invitations for a project
-   * @param {number} projectId - Project ID
+   * @param {string} projectId - Project ID (4-character format: PA12, PB34, etc.)
    * @returns {Promise} List of pending invitations
    */
   getPendingInvitations: async (projectId) => {

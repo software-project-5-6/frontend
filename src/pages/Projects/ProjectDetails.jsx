@@ -37,10 +37,12 @@ import {
   removeUserFromProject,
 } from "../../api/projectApi";
 import { invitationApi } from "../../api/invitationApi";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ProjectDetails() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { isAdmin, userAttributes } = useAuth();
 
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +87,22 @@ export default function ProjectDetails() {
     fetchProjectDetails();
   }, [projectId, navigate]);
 
+  // Check if user is APP_ADMIN or MANAGER of this project
+  const canInviteMembers = () => {
+    // Global admin can always invite
+    if (isAdmin()) return true;
+
+    // Check if user is a MANAGER of this specific project
+    if (project?.assignedUsers && userAttributes?.email) {
+      const userRole = project.assignedUsers.find(
+        (user) => user.email === userAttributes.email
+      );
+      return userRole?.role === "MANAGER";
+    }
+
+    return false;
+  };
+
   // Handle back navigation
   const handleBack = () => {
     navigate("/projects");
@@ -100,9 +118,12 @@ export default function ProjectDetails() {
   };
 
   const handleEditSave = async (updatedProject) => {
-    // Refresh project data after successful update
+    console.log("handleEditSave called with:", updatedProject);
+
+    // Refresh from server to get the updated project with all relationships
     try {
       const data = await getProjectById(projectId);
+      console.log("Refreshed project data:", data);
       setProject(data);
     } catch (err) {
       console.error("Error refreshing project:", err);
@@ -129,7 +150,7 @@ export default function ProjectDetails() {
       handleInviteClose();
 
       // Send invitation in background
-      await invitationApi.sendInvitation(Number(projectId), {
+      await invitationApi.sendInvitation(projectId, {
         email: inviteData.email,
         role: inviteData.role,
       });
@@ -341,11 +362,13 @@ export default function ProjectDetails() {
                 getInitials={getInitials}
               />
 
-              {/* Pending Invitations Section */}
-              <PendingInvitations
-                projectId={projectId}
-                refreshTrigger={refreshInvitations}
-              />
+              {/* Pending Invitations Section - Only visible to APP_ADMIN and MANAGER */}
+              {canInviteMembers() && (
+                <PendingInvitations
+                  projectId={projectId}
+                  refreshTrigger={refreshInvitations}
+                />
+              )}
             </Box>
           )}
 

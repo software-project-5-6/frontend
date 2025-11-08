@@ -105,7 +105,7 @@ export default function Navbar({ onMenuClick }) {
             letterSpacing: "0.5px",
           }}
         >
-          Project Space Management
+          Space Management
         </Typography>
 
         {/* User Info */}

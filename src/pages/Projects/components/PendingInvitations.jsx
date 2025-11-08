@@ -40,6 +40,8 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
       setError(null);
       const data = await invitationApi.getPendingInvitations(projectId);
       setInvitations(data);
+      console.log("Loaded data:", data);
+      console.log("Loaded invitations:", invitations);
     } catch (err) {
       console.error("Error loading invitations:", err);
       setError(

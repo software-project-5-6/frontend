@@ -404,26 +404,6 @@ export default function ViewProjectDialog({ open, onClose, project }) {
                   </Box>
                 </Stack>
               </Box>
-
-              {/* Info Note */}
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: (theme) => alpha(theme.palette.info.main, 0.04),
-                  border: (theme) =>
-                    `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  fontSize="0.813rem"
-                >
-                  ℹ️ This is a read-only view. Click "Edit Project" to make
-                  changes.
-                </Typography>
-              </Box>
             </Stack>
           </Box>
         )}

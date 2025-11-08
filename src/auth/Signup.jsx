@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { signUp, confirmSignUp } from "aws-amplify/auth";
+import { signUp, confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import {
   TextField,
@@ -10,6 +10,7 @@ import {
   Box,
   InputAdornment,
   IconButton,
+  Alert,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
@@ -51,6 +52,30 @@ export default function Signup() {
       });
       setStage("confirm");
       setMessage("✅ Verification code sent to your email.");
+    } catch (error) {
+      // Check if user already exists but not confirmed
+      if (error.name === "UsernameExistsException") {
+        setMessage(
+          "⚠️ This email is already registered. If you haven't verified, you can resend the code below."
+        );
+        setStage("confirm");
+      } else {
+        setMessage("❌ " + error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Handle Resend Code
+  const handleResendCode = async () => {
+    setLoading(true);
+    setMessage("");
+    try {
+      await resendSignUpCode({
+        username: email,
+      });
+      setMessage("✅ New verification code sent to your email.");
     } catch (error) {
       setMessage("❌ " + error.message);
     } finally {
@@ -223,6 +248,11 @@ export default function Signup() {
         </>
       ) : (
         <>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            We've sent a verification code to <strong>{email}</strong>. Check
+            your email (including spam folder) and enter the code below.
+          </Alert>
+
           <TextField
             label="Verification Code"
             fullWidth
@@ -230,6 +260,7 @@ export default function Signup() {
             onChange={(e) => setConfirmCode(e.target.value)}
             margin="dense"
             size="small"
+            placeholder="Enter 6-digit code"
             sx={{
               mb: 1.5,
               "& .MuiOutlinedInput-root": {
@@ -262,6 +293,48 @@ export default function Signup() {
               "Verify Email"
             )}
           </Button>
+
+          {/* Resend Code Button */}
+          <Box
+            sx={{
+              mt: 2,
+              display: "flex",
+              justifyContent: "center",
+              gap: 1,
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Didn't receive the code?
+            </Typography>
+            <Button
+              onClick={handleResendCode}
+              disabled={loading}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                p: 0.5,
+                minWidth: "auto",
+              }}
+            >
+              Resend Code
+            </Button>
+          </Box>
+
+          {/* Back to Signup Button */}
+          <Box sx={{ mt: 1, display: "flex", justifyContent: "center" }}>
+            <Button
+              onClick={() => setStage("signup")}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.875rem",
+                color: "text.secondary",
+              }}
+            >
+              Back to Sign Up
+            </Button>
+          </Box>
         </>
       )}
 
