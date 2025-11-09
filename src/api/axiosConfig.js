@@ -5,23 +5,18 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1",
 });
 
-// Request interceptor to add JWT token to headers
+
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Fetch the current auth session from AWS Amplify
       const session = await fetchAuthSession();
-
-      // Get the ID token (contains user identity - use this for your backend)
       const idToken = session.tokens?.idToken?.toString();
 
       if (idToken) {
-        config.headers.Authorization = `Bearer ${idToken}`;
+        config.headers.Authorization = `Bearer ${idToken}`; // Attach token to headers
       }
     } catch (error) {
       console.error("Error fetching auth session:", error);
-      // If token fetch fails, continue without token
-      // Your backend will handle unauthorized requests
     }
     return config;
   },

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { signIn } from "aws-amplify/auth";
+import api from "../api/axiosConfig";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   TextField,
@@ -28,7 +29,6 @@ export default function Login() {
     setLoading(true);
     setMessage("");
     try {
-      // 🔹 AWS Cognito Authentication
       const result = await signIn({
         username: email,
         password: password,
@@ -39,6 +39,9 @@ export default function Login() {
 
         // Refresh auth context to load user role before navigation
         await refreshAuth();
+
+        console.log("Login successful, syncing user data...");
+        await api.post("/auth/sync", {}); //to user sync with backend database
 
         // Check if user was trying to access a specific page (like invitation)
         const intendedDestination = location.state?.from;
