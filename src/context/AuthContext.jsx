@@ -1,21 +1,42 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   getCurrentUser,
   fetchAuthSession,
   fetchUserAttributes,
 } from "aws-amplify/auth";
+import { useLocation } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userAttributes, setUserAttributes] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false); // 🆕 Prevent rechecking
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    const publicRoutes = [
+      "/login",
+      "/signup",
+      "/forgot-password",
+      "/confirm-signup",
+    ];
+
+    const isPublicRoute = publicRoutes.some((route) =>
+      location.pathname.startsWith(route)
+    );
+
+    if (!isPublicRoute && !hasCheckedAuth) {
+      checkAuth().finally(() => {
+        setHasCheckedAuth(true);
+      });
+    } else if (isPublicRoute) {
+      setLoading(false); // Avoid blocking login/signup with spinner
+    }
+  }, []); // 👈 Only run once on app mount
 
   const checkAuth = async () => {
     try {
@@ -23,7 +44,6 @@ export const AuthProvider = ({ children }) => {
       const session = await fetchAuthSession();
       const attributes = await fetchUserAttributes();
 
-      // Extract role from JWT token
       const idToken = session.tokens?.idToken;
       const role =
         idToken?.payload["custom:role"] ||
@@ -34,7 +54,9 @@ export const AuthProvider = ({ children }) => {
       setUserRole(role);
       setUserAttributes(attributes);
     } catch (error) {
-      console.error("Auth check failed:", error);
+      if (error.name !== "UserUnAuthenticatedException") {
+        console.error("Auth check failed:", error);
+      }
       setUser(null);
       setUserRole(null);
       setUserAttributes(null);
@@ -43,21 +65,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const hasRole = (requiredRole) => {
-    return userRole === requiredRole;
-  };
-
-  const hasAnyRole = (roles) => {
-    return roles.includes(userRole);
-  };
-
-  const isAdmin = () => {
-    return userRole === "APP_ADMIN";
-  };
-
-  const isUser = () => {
-    return userRole === "APP_USER";
-  };
+  const hasRole = (requiredRole) => userRole === requiredRole;
+  const hasAnyRole = (roles) => roles.includes(userRole);
+  const isAdmin = () => userRole === "APP_ADMIN";
+  const isUser = () => userRole === "APP_USER";
 
   const value = {
     user,
@@ -68,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     hasAnyRole,
     isAdmin,
     isUser,
-    refreshAuth: checkAuth,
+    refreshAuth: checkAuth, // Allow manual refresh (e.g., after login)
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

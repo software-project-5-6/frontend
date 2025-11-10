@@ -25,70 +25,116 @@ export default function Login() {
   const location = useLocation();
   const { refreshAuth } = useAuth();
 
+  // const handleLogin = async () => {
+  //   setLoading(true);
+  //   setMessage("");
+  //   try {
+  //     console.time("signIn");
+  //     const result = await signIn({
+  //       username: email,
+  //       password: password,
+  //     });
+  //     console.timeEnd("signIn");
+
+  //     if (result.isSignedIn) {
+  //       //setMessage("✅ Login successful!");
+  //       await refreshAuth(); //refresh auth context
+  //       console.log("Login successful, syncing user data...");
+  //       console.time("syncUserData");
+  //       await api.post("/auth/sync", {}); //to user sync with backend database
+  //       console.timeEnd("syncUserData");
+  //       const intendedDestination = location.state?.from; //check if user was trying to access invitation page
+
+  //       if (intendedDestination) {
+  //         // Redirect to the intended destination (e.g., /invite/accept?token=xyz)
+  //         navigate(intendedDestination, { replace: true });
+  //       } else {
+  //         // Default: go to home page
+  //         navigate("/", { replace: true });
+  //       }
+  //     } else if (result.nextStep) {
+  //       // Check if user needs to confirm signup
+  //       if (result.nextStep.signInStep === "CONFIRM_SIGN_UP") {
+  //         setMessage(
+  //           "⚠️ Your account is not verified. Redirecting to verification page..."
+  //         );
+  //         setTimeout(() => {
+  //           navigate("/confirm-signup", { state: { email, fromLogin: true } });
+  //         }, 2000);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     // Check if user needs to confirm their account
+  //     // AWS Cognito can throw this with different error names/codes
+  //     if (
+  //       error.name === "UserNotConfirmedException" ||
+  //       error.code === "UserNotConfirmedException" ||
+  //       error.message?.includes("User is not confirmed") ||
+  //       error.message?.includes("not confirmed")
+  //     ) {
+  //       setMessage(
+  //         "⚠️ Your account is not verified. Redirecting to verification page..."
+  //       );
+  //       setTimeout(() => {
+  //         navigate("/confirm-signup", { state: { email, fromLogin: true } });
+  //       }, 2000);
+  //     } else {
+  //       setMessage(
+  //         "❌ " +
+  //           (error.message || "Login failed. Please check your credentials.")
+  //       );
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+
+
   const handleLogin = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      const result = await signIn({
-        username: email,
-        password: password,
-      });
+  setLoading(true);
+  setMessage("");
 
-      if (result.isSignedIn) {
-        setMessage("✅ Login successful!");
+  try {
+    console.time("signIn");
+    const result = await signIn({ username: email, password });
+    console.timeEnd("signIn");
 
-        // Refresh auth context to load user role before navigation
-        await refreshAuth();
+    if (result.isSignedIn) {
+      await refreshAuth(); // fetch session and setContext
 
-        console.log("Login successful, syncing user data...");
-        await api.post("/auth/sync", {}); //to user sync with backend database
+      // background sync (non-blocking)
+      console.time("syncUserData");
+      api.post("/auth/sync", {}).finally(() => console.timeEnd("syncUserData"));
 
-        // Check if user was trying to access a specific page (like invitation)
-        const intendedDestination = location.state?.from;
-
-        if (intendedDestination) {
-          // Redirect to the intended destination (e.g., /invite/accept?token=xyz)
-          navigate(intendedDestination, { replace: true });
-        } else {
-          // Default: go to home page
-          navigate("/", { replace: true });
-        }
-      } else if (result.nextStep) {
-        // Check if user needs to confirm signup
-        if (result.nextStep.signInStep === "CONFIRM_SIGN_UP") {
-          setMessage(
-            "⚠️ Your account is not verified. Redirecting to verification page..."
-          );
-          setTimeout(() => {
-            navigate("/confirm-signup", { state: { email, fromLogin: true } });
-          }, 2000);
-        }
-      }
-    } catch (error) {
-      // Check if user needs to confirm their account
-      // AWS Cognito can throw this with different error names/codes
-      if (
-        error.name === "UserNotConfirmedException" ||
-        error.code === "UserNotConfirmedException" ||
-        error.message?.includes("User is not confirmed") ||
-        error.message?.includes("not confirmed")
-      ) {
-        setMessage(
-          "⚠️ Your account is not verified. Redirecting to verification page..."
-        );
-        setTimeout(() => {
-          navigate("/confirm-signup", { state: { email, fromLogin: true } });
-        }, 2000);
-      } else {
-        setMessage(
-          "❌ " +
-            (error.message || "Login failed. Please check your credentials.")
-        );
-      }
-    } finally {
-      setLoading(false);
+      // Redirect immediately
+      const intendedDestination = location.state?.from;
+      navigate(intendedDestination || "/", { replace: true });
+    } else if (result.nextStep?.signInStep === "CONFIRM_SIGN_UP") {
+      setMessage("⚠️ Your account is not verified. Redirecting...");
+      setTimeout(() => {
+        navigate("/confirm-signup", { state: { email, fromLogin: true } });
+      }, 2000);
     }
-  };
+  } catch (error) {
+    if (
+      error.name === "UserNotConfirmedException" ||
+      error.code === "UserNotConfirmedException"
+    ) {
+      setMessage("⚠️ Your account is not verified. Redirecting...");
+      setTimeout(() => {
+        navigate("/confirm-signup", { state: { email, fromLogin: true } });
+      }, 2000);
+    } else {
+      setMessage(
+        "❌ " + (error.message || "Login failed. Please check your credentials.")
+      );
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Box sx={{ p: { xs: 2.5, sm: 3 } }}>
@@ -187,7 +233,7 @@ export default function Login() {
           sx={{
             mt: 1.5,
             fontSize: "0.85rem",
-            color: message.includes("✅") ? "success.main" : "error.main",
+            color: "error.main",
             fontWeight: 500,
           }}
         >
