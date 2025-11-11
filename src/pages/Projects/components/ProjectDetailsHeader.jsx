@@ -5,6 +5,7 @@ import {
   Edit as EditIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../../styles/theme";
+import { ShowForAdmin } from "../../../components/RoleBasedComponents";
 
 export default function ProjectDetailsHeader({ onBack, onEdit }) {
   return (
@@ -33,20 +34,22 @@ export default function ProjectDetailsHeader({ onBack, onEdit }) {
           View and manage project information
         </Typography>
       </Box>
-      <Button
-        variant="contained"
-        startIcon={<EditIcon />}
-        onClick={onEdit}
-        sx={{
-          background: gradients.orange,
-          "&:hover": {
-            background: gradients.orange,
-            opacity: 0.9,
-          },
-        }}
-      >
-        Edit Project
-      </Button>
+      {/* Edit Button - Admin Only */}
+      <ShowForAdmin>
+        <Button
+          variant="contained"
+          startIcon={<EditIcon />}
+          onClick={onEdit}
+          sx={{
+            background: "#ed6c02",
+            "&:hover": {
+              background: "#e65100",
+            },
+          }}
+        >
+          Edit Project
+        </Button>
+      </ShowForAdmin>
     </Box>
   );
 }

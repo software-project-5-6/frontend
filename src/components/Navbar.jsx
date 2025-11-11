@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -18,36 +18,15 @@ import {
   Settings as SettingsIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
-import { fetchUserAttributes, signOut,fetchAuthSession } from "aws-amplify/auth";
+import { signOut } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import { gradients } from "../styles/theme";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar({ onMenuClick }) {
   const [anchorEl, setAnchorEl] = useState(null);
-  const [userAttributes, setUserAttributes] = useState(null);
+  const { userAttributes } = useAuth();
   const navigate = useNavigate();
-
-  
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  const fetchUser = async () => {
-    try {
-      const attributes = await fetchUserAttributes();
-      setUserAttributes(attributes);
-
-      const session = await fetchAuthSession();
-
-      // Get the ID token (contains user identity - use this for your backend)
-      const idToken = session.tokens?.idToken?.toString();
-      const accessToken = session.tokens?.accessToken?.toString();
-      console.log("ID Token:", idToken);
-      console.log("Access Token:", accessToken);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-    }
-  };
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -102,6 +81,7 @@ export default function Navbar({ onMenuClick }) {
         zIndex: (theme) => theme.zIndex.drawer + 1,
         background: gradients.primary,
         boxShadow: 3,
+        borderRadius: "0",
       }}
     >
       <Toolbar>
@@ -125,7 +105,7 @@ export default function Navbar({ onMenuClick }) {
             letterSpacing: "0.5px",
           }}
         >
-          Project Management
+          Space Management
         </Typography>
 
         {/* User Info */}

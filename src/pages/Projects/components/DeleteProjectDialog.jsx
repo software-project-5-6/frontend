@@ -7,7 +7,7 @@ import {
   Button,
   Typography,
 } from "@mui/material";
-import { gradients } from "../../styles/theme";
+import { gradients } from "../../../styles/theme";
 
 export default function DeleteProjectDialog({
   open,

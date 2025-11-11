@@ -6,9 +6,10 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import App from "./App.jsx";
 import awsConfig from "./aws-exports";
 import { theme } from "./styles/theme.js";
+import { AuthProvider } from "./context/AuthContext.jsx";
 import "./styles/globals.css";
 
-// 🔹 Initialize AWS Amplify (Cognito setup)
+//Initialize AWS Amplify (Cognito setup)
 Amplify.configure(awsConfig);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   </React.StrictMode>

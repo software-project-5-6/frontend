@@ -149,7 +149,7 @@ export default function ProjectStatsCards({ project }) {
                 textShadow: "0 2px 4px rgba(0,0,0,0.1)",
               }}
             >
-              {project.users?.length || 0}
+              {project.assignedUsers?.length || 0}
             </Typography>
             <Typography
               variant="body2"
