@@ -27,6 +27,7 @@ export default function MainLayout({ children }) {
           width: { sm: `calc(100% - 240px)` },
           minHeight: "100vh",
           backgroundColor: "#f5f7fa",
+          overflow: "auto",
         }}
       >
         <Toolbar /> {/* Spacer for AppBar */}

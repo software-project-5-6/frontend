@@ -15,10 +15,29 @@ import {
   CalendarToday as CalendarIcon,
   Assessment as AssessmentIcon,
   AttachMoney as MoneyIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../../styles/theme";
+import { ShowForAdmin } from "../../../components/RoleBasedComponents";
 
-export default function ProjectInfoCard({ project, getStatusColor }) {
+export default function ProjectInfoCard({ project }) {
+  // Format date from backend
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Format price
+  const formatPrice = (price) => {
+    if (!price) return "$0.00";
+    return `$${price.toFixed(2)}`;
+  };
+
   return (
     <Paper
       elevation={0}
@@ -62,21 +81,10 @@ export default function ProjectInfoCard({ project, getStatusColor }) {
               Project Name
             </Typography>
             <Typography variant="h6" fontWeight={600} sx={{ lineHeight: 1.2 }}>
-              {project.name}
+              {project.projectName}
             </Typography>
           </Box>
         </Box>
-        <Chip
-          label={project.status}
-          size="small"
-          sx={{
-            bgcolor: "white",
-            color: "primary.main",
-            fontWeight: 700,
-            fontSize: "0.75rem",
-            height: 28,
-          }}
-        />
       </Box>
 
       {/* Card Content - Better organized */}
@@ -122,8 +130,8 @@ export default function ProjectInfoCard({ project, getStatusColor }) {
             CLIENT INFORMATION
           </Typography>
           <Grid container spacing={2.5}>
-            {/* Client Email */}
-            <Grid item xs={12} sm={6}>
+            {/* Client Name */}
+            <Grid item xs={12}>
               <Box
                 sx={{
                   p: 2,
@@ -155,7 +163,7 @@ export default function ProjectInfoCard({ project, getStatusColor }) {
                       display: "flex",
                     }}
                   >
-                    <EmailIcon sx={{ fontSize: 18 }} />
+                    <PersonIcon sx={{ fontSize: 18 }} />
                   </Box>
                   <Typography
                     variant="caption"
@@ -163,64 +171,118 @@ export default function ProjectInfoCard({ project, getStatusColor }) {
                     fontWeight={600}
                     textTransform="uppercase"
                   >
-                    Email Address
+                    Client Name
                   </Typography>
                 </Box>
                 <Typography variant="body2" fontWeight={600} sx={{ ml: 4.5 }}>
-                  {project.clientEmail}
+                  {project.clientName || "N/A"}
                 </Typography>
               </Box>
             </Grid>
 
-            {/* Client Phone */}
-            <Grid item xs={12} sm={6}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: "background.default",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: 1,
-                  },
-                }}
-              >
+            {/* Client Email - Admin Only */}
+            <ShowForAdmin>
+              <Grid item xs={12} sm={6}>
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    mb: 1,
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: "background.default",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    transition: "all 0.3s",
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      boxShadow: 1,
+                    },
                   }}
                 >
                   <Box
                     sx={{
-                      bgcolor: "primary.main",
-                      color: "white",
-                      borderRadius: 1,
-                      p: 0.75,
                       display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      mb: 1,
                     }}
                   >
-                    <PhoneIcon sx={{ fontSize: 18 }} />
+                    <Box
+                      sx={{
+                        bgcolor: "primary.main",
+                        color: "white",
+                        borderRadius: 1,
+                        p: 0.75,
+                        display: "flex",
+                      }}
+                    >
+                      <EmailIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                      textTransform="uppercase"
+                    >
+                      Email Address
+                    </Typography>
                   </Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    fontWeight={600}
-                    textTransform="uppercase"
-                  >
-                    Phone Number
+                  <Typography variant="body2" fontWeight={600} sx={{ ml: 4.5 }}>
+                    {project.clientEmail || "N/A"}
                   </Typography>
                 </Box>
-                <Typography variant="body2" fontWeight={600} sx={{ ml: 4.5 }}>
-                  {project.clientPhone}
-                </Typography>
-              </Box>
-            </Grid>
+              </Grid>
+            </ShowForAdmin>
+
+            {/* Client Phone - Admin Only */}
+            <ShowForAdmin>
+              <Grid item xs={12} sm={6}>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: "background.default",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    transition: "all 0.3s",
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      boxShadow: 1,
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      mb: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "primary.main",
+                        color: "white",
+                        borderRadius: 1,
+                        p: 0.75,
+                        display: "flex",
+                      }}
+                    >
+                      <PhoneIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                      textTransform="uppercase"
+                    >
+                      Phone Number
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" fontWeight={600} sx={{ ml: 4.5 }}>
+                    {project.clientPhone || "N/A"}
+                  </Typography>
+                </Box>
+              </Grid>
+            </ShowForAdmin>
           </Grid>
         </Box>
 
@@ -239,7 +301,7 @@ export default function ProjectInfoCard({ project, getStatusColor }) {
           </Typography>
           <Grid container spacing={2.5}>
             {/* Created Date */}
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Box
                   sx={{
@@ -261,76 +323,46 @@ export default function ProjectInfoCard({ project, getStatusColor }) {
                     Created Date
                   </Typography>
                   <Typography variant="body2" fontWeight={700}>
-                    {project.createdDate}
+                    {formatDate(project.createdAt)}
                   </Typography>
                 </Box>
               </Box>
             </Grid>
 
-            {/* Project Price */}
-            <Grid item xs={12} sm={6} md={4}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Box
-                  sx={{
-                    bgcolor: "info.light",
-                    color: "info.dark",
-                    borderRadius: 1.5,
-                    p: 1,
-                    display: "flex",
-                  }}
-                >
-                  <MoneyIcon sx={{ fontSize: 20 }} />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
+            {/* Project Price - Admin Only */}
+            <ShowForAdmin>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      bgcolor: "info.light",
+                      color: "info.dark",
+                      borderRadius: 1.5,
+                      p: 1,
+                      display: "flex",
+                    }}
                   >
-                    Project Budget
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    fontWeight={700}
-                    color="info.main"
-                  >
-                    {project.price || "N/A"}
-                  </Typography>
+                    <MoneyIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
+                      Project Budget
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      color="info.main"
+                    >
+                      {formatPrice(project.price)}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            </Grid>
-
-            {/* Status */}
-            <Grid item xs={12} sm={6} md={4}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Box
-                  sx={{
-                    bgcolor: "warning.light",
-                    color: "warning.dark",
-                    borderRadius: 1.5,
-                    p: 1,
-                    display: "flex",
-                  }}
-                >
-                  <AssessmentIcon sx={{ fontSize: 20 }} />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
-                    Project Status
-                  </Typography>
-                  <Chip
-                    label={project.status}
-                    size="small"
-                    color={getStatusColor(project.status)}
-                    sx={{ fontWeight: 700, height: 24 }}
-                  />
-                </Box>
-              </Box>
-            </Grid>
+              </Grid>
+            </ShowForAdmin>
           </Grid>
         </Box>
       </CardContent>
