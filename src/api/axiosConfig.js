@@ -11,6 +11,7 @@ api.interceptors.request.use(
     try {
       const session = await fetchAuthSession();
       const idToken = session.tokens?.idToken?.toString();
+      console.log("Fetched ID Token for request:", idToken);
 
       if (idToken) {
         config.headers.Authorization = `Bearer ${idToken}`; // Attach token to headers
