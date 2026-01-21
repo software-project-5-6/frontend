@@ -198,7 +198,7 @@ export default function Login() {
                 edge="end"
                 size="small"
               >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
+                {showPassword ? <Visibility /> : <VisibilityOff />}
               </IconButton>
             </InputAdornment>
           ),

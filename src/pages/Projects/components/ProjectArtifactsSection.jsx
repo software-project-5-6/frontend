@@ -1,4 +1,408 @@
-import React from "react";
+// import React from "react";
+// import {
+//   Paper,
+//   Box,
+//   Typography,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   IconButton,
+//   Tooltip,
+//   Chip,
+//   Button,
+// } from "@mui/material";
+// import {
+//   Description as DescriptionIcon,
+//   CloudUpload as UploadIcon,
+//   Download as DownloadIcon,
+//   Delete as DeleteIcon,
+//   InsertDriveFile as FileIcon,
+// } from "@mui/icons-material";
+// import { gradients } from "../../../styles/theme";
+
+// // Dummy artifacts data
+// const dummyArtifacts = [
+//   {
+//     id: 1,
+//     name: "Project Requirements.pdf",
+//     type: "PDF",
+//     size: "2.4 MB",
+//     uploadedBy: "John Smith",
+//     uploadedDate: "2024-03-15",
+//   },
+//   {
+//     id: 2,
+//     name: "Design Mockups.fig",
+//     type: "Figma",
+//     size: "5.1 MB",
+//     uploadedBy: "Sarah Johnson",
+//     uploadedDate: "2024-03-16",
+//   },
+//   {
+//     id: 3,
+//     name: "Database Schema.sql",
+//     type: "SQL",
+//     size: "124 KB",
+//     uploadedBy: "Mike Wilson",
+//     uploadedDate: "2024-03-17",
+//   },
+//   {
+//     id: 4,
+//     name: "API Documentation.docx",
+//     type: "DOCX",
+//     size: "876 KB",
+//     uploadedBy: "Emily Brown",
+//     uploadedDate: "2024-03-18",
+//   },
+//   {
+//     id: 5,
+//     name: "Logo Assets.zip",
+//     type: "ZIP",
+//     size: "15.8 MB",
+//     uploadedBy: "David Lee",
+//     uploadedDate: "2024-03-19",
+//   },
+// ];
+
+// export default function ProjectArtifactsSection({ project }) {
+//   const handleUpload = () => {
+//     // TODO: Implement file upload
+//     console.log("Upload artifact");
+//   };
+
+//   const handleDownload = (artifactId) => {
+//     // TODO: Implement download
+//     console.log("Download artifact:", artifactId);
+//   };
+
+//   const handleDelete = (artifactId) => {
+//     // TODO: Implement delete
+//     console.log("Delete artifact:", artifactId);
+//   };
+
+//   const getFileTypeColor = (type) => {
+//     switch (type.toUpperCase()) {
+//       case "PDF":
+//         return "error";
+//       case "FIGMA":
+//         return "secondary";
+//       case "SQL":
+//         return "info";
+//       case "DOCX":
+//         return "primary";
+//       case "ZIP":
+//         return "warning";
+//       default:
+//         return "default";
+//     }
+//   };
+
+//   return (
+//     <Paper
+//       elevation={0}
+//       sx={{
+//         borderRadius: 3,
+//         overflow: "hidden",
+//         border: "1px solid",
+//         borderColor: "divider",
+//       }}
+//     >
+//       {/* Section Header */}
+//       <Box
+//         sx={{
+//           background: gradients.orange,
+//           color: "white",
+//           p: 2.5,
+//           display: "flex",
+//           justifyContent: "space-between",
+//           alignItems: "center",
+//           flexWrap: "wrap",
+//           gap: 2,
+//         }}
+//       >
+//         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+//           <Box
+//             sx={{
+//               bgcolor: "rgba(255, 255, 255, 0.2)",
+//               borderRadius: 2,
+//               p: 1.5,
+//               display: "flex",
+//               backdropFilter: "blur(10px)",
+//             }}
+//           >
+//             <DescriptionIcon sx={{ fontSize: 28 }} />
+//           </Box>
+//           <Box>
+//             <Typography variant="h6" fontWeight={600} sx={{ lineHeight: 1.2 }}>
+//               Project Artifacts
+//             </Typography>
+//             <Typography variant="caption" sx={{ opacity: 0.9 }}>
+//               {project.artifactCount} file
+//               {project.artifactCount !== 1 ? "s" : ""} • Documents & Resources
+//             </Typography>
+//           </Box>
+//         </Box>
+//         <Button
+//           variant="contained"
+//           startIcon={<UploadIcon />}
+//           onClick={handleUpload}
+//           sx={{
+//             bgcolor: "white",
+//             color: "warning.main",
+//             fontWeight: 600,
+//             boxShadow: 2,
+//             "&:hover": {
+//               bgcolor: "grey.50",
+//               boxShadow: 4,
+//             },
+//           }}
+//         >
+//           Upload File
+//         </Button>
+//       </Box>
+
+//       {/* Artifacts Table */}
+//       <TableContainer sx={{ maxHeight: 600 }}>
+//         <Table stickyHeader>
+//           <TableHead>
+//             <TableRow>
+//               <TableCell
+//                 sx={{
+//                   fontWeight: 700,
+//                   bgcolor: "background.default",
+//                   borderBottom: 2,
+//                   borderColor: "divider",
+//                   fontSize: "0.75rem",
+//                   textTransform: "uppercase",
+//                   letterSpacing: 0.5,
+//                 }}
+//               >
+//                 File Name
+//               </TableCell>
+//               <TableCell
+//                 align="center"
+//                 sx={{
+//                   fontWeight: 700,
+//                   bgcolor: "background.default",
+//                   borderBottom: 2,
+//                   borderColor: "divider",
+//                   fontSize: "0.75rem",
+//                   textTransform: "uppercase",
+//                   letterSpacing: 0.5,
+//                 }}
+//               >
+//                 Type
+//               </TableCell>
+//               <TableCell
+//                 align="center"
+//                 sx={{
+//                   fontWeight: 700,
+//                   bgcolor: "background.default",
+//                   borderBottom: 2,
+//                   borderColor: "divider",
+//                   fontSize: "0.75rem",
+//                   textTransform: "uppercase",
+//                   letterSpacing: 0.5,
+//                 }}
+//               >
+//                 Size
+//               </TableCell>
+//               <TableCell
+//                 sx={{
+//                   fontWeight: 700,
+//                   bgcolor: "background.default",
+//                   borderBottom: 2,
+//                   borderColor: "divider",
+//                   fontSize: "0.75rem",
+//                   textTransform: "uppercase",
+//                   letterSpacing: 0.5,
+//                 }}
+//               >
+//                 Uploaded By
+//               </TableCell>
+//               <TableCell
+//                 align="center"
+//                 sx={{
+//                   fontWeight: 700,
+//                   bgcolor: "background.default",
+//                   borderBottom: 2,
+//                   borderColor: "divider",
+//                   fontSize: "0.75rem",
+//                   textTransform: "uppercase",
+//                   letterSpacing: 0.5,
+//                 }}
+//               >
+//                 Date
+//               </TableCell>
+//               <TableCell
+//                 align="center"
+//                 sx={{
+//                   fontWeight: 700,
+//                   bgcolor: "background.default",
+//                   borderBottom: 2,
+//                   borderColor: "divider",
+//                   fontSize: "0.75rem",
+//                   textTransform: "uppercase",
+//                   letterSpacing: 0.5,
+//                 }}
+//               >
+//                 Actions
+//               </TableCell>
+//             </TableRow>
+//           </TableHead>
+//           <TableBody>
+//             {dummyArtifacts.length > 0 ? (
+//               dummyArtifacts.map((artifact, index) => (
+//                 <TableRow
+//                   key={artifact.id}
+//                   sx={{
+//                     "&:hover": {
+//                       bgcolor: "action.hover",
+//                       "& .action-btn": {
+//                         opacity: 1,
+//                       },
+//                     },
+//                     transition: "background-color 0.2s",
+//                   }}
+//                 >
+//                   {/* File Name */}
+//                   <TableCell sx={{ py: 2 }}>
+//                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+//                       <Box
+//                         sx={{
+//                           bgcolor: "action.hover",
+//                           borderRadius: 1.5,
+//                           p: 1,
+//                           display: "flex",
+//                         }}
+//                       >
+//                         <FileIcon color="primary" sx={{ fontSize: 24 }} />
+//                       </Box>
+//                       <Box>
+//                         <Typography variant="body2" fontWeight={700}>
+//                           {artifact.name}
+//                         </Typography>
+//                       </Box>
+//                     </Box>
+//                   </TableCell>
+
+//                   {/* Type */}
+//                   <TableCell align="center">
+//                     <Chip
+//                       label={artifact.type}
+//                       size="small"
+//                       color={getFileTypeColor(artifact.type)}
+//                       sx={{
+//                         fontWeight: 700,
+//                         fontSize: "0.7rem",
+//                         height: 26,
+//                         minWidth: 60,
+//                       }}
+//                     />
+//                   </TableCell>
+
+//                   {/* Size */}
+//                   <TableCell align="center">
+//                     <Typography variant="body2" color="text.secondary">
+//                       {artifact.size}
+//                     </Typography>
+//                   </TableCell>
+
+//                   {/* Uploaded By */}
+//                   <TableCell>
+//                     <Typography variant="body2" color="text.secondary">
+//                       {artifact.uploadedBy}
+//                     </Typography>
+//                   </TableCell>
+
+//                   {/* Date */}
+//                   <TableCell align="center">
+//                     <Typography variant="body2" color="text.secondary">
+//                       {artifact.uploadedDate}
+//                     </Typography>
+//                   </TableCell>
+
+//                   {/* Actions */}
+//                   <TableCell align="center">
+//                     <Box
+//                       sx={{
+//                         display: "flex",
+//                         gap: 0.5,
+//                         justifyContent: "center",
+//                       }}
+//                     >
+//                       <Tooltip title="Download" arrow placement="top">
+//                         <IconButton
+//                           className="action-btn"
+//                           size="small"
+//                           onClick={() => handleDownload(artifact.id)}
+//                           sx={{
+//                             opacity: 0.6,
+//                             transition: "all 0.2s",
+//                             "&:hover": {
+//                               bgcolor: "primary.main",
+//                               color: "white",
+//                               opacity: 1,
+//                             },
+//                           }}
+//                         >
+//                           <DownloadIcon fontSize="small" />
+//                         </IconButton>
+//                       </Tooltip>
+//                       <Tooltip title="Delete" arrow placement="top">
+//                         <IconButton
+//                           className="action-btn"
+//                           size="small"
+//                           onClick={() => handleDelete(artifact.id)}
+//                           sx={{
+//                             opacity: 0.6,
+//                             transition: "all 0.2s",
+//                             "&:hover": {
+//                               bgcolor: "error.main",
+//                               color: "white",
+//                               opacity: 1,
+//                             },
+//                           }}
+//                         >
+//                           <DeleteIcon fontSize="small" />
+//                         </IconButton>
+//                       </Tooltip>
+//                     </Box>
+//                   </TableCell>
+//                 </TableRow>
+//               ))
+//             ) : (
+//               <TableRow>
+//                 <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+//                   <Box>
+//                     <DescriptionIcon
+//                       sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
+//                     />
+//                     <Typography
+//                       variant="h6"
+//                       color="text.secondary"
+//                       gutterBottom
+//                     >
+//                       No Artifacts Yet
+//                     </Typography>
+//                     <Typography variant="body2" color="text.secondary">
+//                       Click "Upload File" to add documents to this project
+//                     </Typography>
+//                   </Box>
+//                 </TableCell>
+//               </TableRow>
+//             )}
+//           </TableBody>
+//         </Table>
+//       </TableContainer>
+//     </Paper>
+//   );
+// }
+
+import React, { useEffect, useState } from "react";
 import {
   Paper,
   Box,
@@ -13,90 +417,108 @@ import {
   Tooltip,
   Chip,
   Button,
+  TextField,
+  TableSortLabel, // Added for sorting
 } from "@mui/material";
+
 import {
   Description as DescriptionIcon,
-  CloudUpload as UploadIcon,
   Download as DownloadIcon,
   Delete as DeleteIcon,
   InsertDriveFile as FileIcon,
+  CloudUpload as UploadIcon,
+  FilterList as FilterIcon,
 } from "@mui/icons-material";
-import { gradients } from "../../../styles/theme";
 
-// Dummy artifacts data
-const dummyArtifacts = [
-  {
-    id: 1,
-    name: "Project Requirements.pdf",
-    type: "PDF",
-    size: "2.4 MB",
-    uploadedBy: "John Smith",
-    uploadedDate: "2024-03-15",
-  },
-  {
-    id: 2,
-    name: "Design Mockups.fig",
-    type: "Figma",
-    size: "5.1 MB",
-    uploadedBy: "Sarah Johnson",
-    uploadedDate: "2024-03-16",
-  },
-  {
-    id: 3,
-    name: "Database Schema.sql",
-    type: "SQL",
-    size: "124 KB",
-    uploadedBy: "Mike Wilson",
-    uploadedDate: "2024-03-17",
-  },
-  {
-    id: 4,
-    name: "API Documentation.docx",
-    type: "DOCX",
-    size: "876 KB",
-    uploadedBy: "Emily Brown",
-    uploadedDate: "2024-03-18",
-  },
-  {
-    id: 5,
-    name: "Logo Assets.zip",
-    type: "ZIP",
-    size: "15.8 MB",
-    uploadedBy: "David Lee",
-    uploadedDate: "2024-03-19",
-  },
-];
+// Ensure this path is correct for your project
+import { gradients } from "../../../styles/theme"; 
 
-export default function ProjectArtifactsSection({ project }) {
-  const handleUpload = () => {
-    // TODO: Implement file upload
-    console.log("Upload artifact");
+import {
+  fetchArtifacts,
+  downloadArtifact,
+  deleteArtifact,
+} from "../../../api/artifactApi";
+
+import ArtifactUploadModal from "./ArtifactUploadModal";
+
+export default function ProjectArtifactsSection({ project, username }) {
+  const [artifacts, setArtifacts] = useState([]);
+  const [search, setSearch] = useState("");
+  const [openUpload, setOpenUpload] = useState(false);
+  
+  // --- NEW: Sorting State ---
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('uploadedAt');
+
+  useEffect(() => {
+    loadArtifacts();
+  }, []);
+
+  const loadArtifacts = async () => {
+    try {
+      const data = await fetchArtifacts(project.id);
+      setArtifacts(data);
+    } catch (e) {
+      console.error("Error loading artifacts:", e);
+    }
   };
 
-  const handleDownload = (artifactId) => {
-    // TODO: Implement download
-    console.log("Download artifact:", artifactId);
+  // --- NEW: Sorting Logic ---
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
   };
 
-  const handleDelete = (artifactId) => {
-    // TODO: Implement delete
-    console.log("Delete artifact:", artifactId);
+  const sortArtifacts = (array) => {
+    return array.sort((a, b) => {
+      // Handle null values safely
+      const aValue = a[orderBy] || '';
+      const bValue = b[orderBy] || '';
+
+      if (bValue < aValue) {
+        return order === 'asc' ? 1 : -1;
+      }
+      if (bValue > aValue) {
+        return order === 'asc' ? -1 : 1;
+      }
+      return 0;
+    });
   };
 
   const getFileTypeColor = (type) => {
-    switch (type.toUpperCase()) {
-      case "PDF":
-        return "error";
-      case "FIGMA":
-        return "secondary";
-      case "SQL":
-        return "info";
-      case "DOCX":
-        return "primary";
-      case "ZIP":
-        return "warning";
-      default:
-        return "default";
+    switch (type?.toUpperCase()) {
+      case "PDF": return "error";
+      case "FIGMA": return "secondary";
+      case "SQL": return "info";
+      case "DOCX": return "primary";
+      case "ZIP": return "warning";
+      case "IMAGE": return "success"; // Added for your new Modal type
+      default: return "default";
+    }
+  };
+
+  // Filter then Sort
+  const filtered = artifacts.filter((a) =>
+    a.originalFilename?.toLowerCase().includes(search.toLowerCase())
+  );
+  const sortedAndFiltered = sortArtifacts([...filtered]);
+
+  const handleDownload = async (artifact) => {
+    try {
+      await downloadArtifact(project.id, artifact.id, artifact.originalFilename);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
+  const handleDelete = async (artifact) => {
+    if (!window.confirm(`Delete ${artifact.originalFilename}?`)) return;
+    try {
+      await deleteArtifact(project.id, artifact.id);
+      loadArtifacts();
+    } catch (error) {
+      console.error("Delete failed:", error);
     }
   };
 
@@ -110,10 +532,10 @@ export default function ProjectArtifactsSection({ project }) {
         borderColor: "divider",
       }}
     >
-      {/* Section Header */}
+      {/* HEADER */}
       <Box
         sx={{
-          background: gradients.orange,
+          background: gradients.orange, // Make sure 'gradients' is imported or defined
           color: "white",
           p: 2.5,
           display: "flex",
@@ -140,135 +562,108 @@ export default function ProjectArtifactsSection({ project }) {
               Project Artifacts
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              {project.artifactCount} file
-              {project.artifactCount !== 1 ? "s" : ""} • Documents & Resources
+              {sortedAndFiltered.length} files • Documents & Resources
             </Typography>
           </Box>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<UploadIcon />}
-          onClick={handleUpload}
-          sx={{
-            bgcolor: "white",
-            color: "warning.main",
-            fontWeight: 600,
-            boxShadow: 2,
-            "&:hover": {
-              bgcolor: "grey.50",
-              boxShadow: 4,
-            },
-          }}
-        >
-          Upload File
-        </Button>
+
+        {/* Search + Upload */}
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            size="small"
+            placeholder="Search files..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ 
+              bgcolor: "white", 
+              borderRadius: 1, 
+              width: 220,
+              "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: "transparent" },
+              }
+            }}
+          />
+
+          <Button
+            variant="contained"
+            startIcon={<UploadIcon />}
+            onClick={() => setOpenUpload(true)}
+            sx={{
+              bgcolor: "white",
+              color: "warning.main", // Matches the orange theme
+              fontWeight: 600,
+              boxShadow: 2,
+              "&:hover": {
+                bgcolor: "grey.50",
+                boxShadow: 4,
+              },
+            }}
+          >
+            Upload File
+          </Button>
+        </Box>
       </Box>
 
-      {/* Artifacts Table */}
+      {/* TABLE */}
       <TableContainer sx={{ maxHeight: 600 }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                  borderColor: "divider",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                File Name
+              {/* Sortable: File Name */}
+              <TableCell sx={{ fontWeight: 700, bgcolor: "background.default", borderBottom: 2 }}>
+                <TableSortLabel
+                  active={orderBy === 'originalFilename'}
+                  direction={orderBy === 'originalFilename' ? order : 'asc'}
+                  onClick={() => handleRequestSort('originalFilename')}
+                >
+                  File Name
+                </TableSortLabel>
               </TableCell>
-              <TableCell
-                align="center"
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                  borderColor: "divider",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Type
+
+              <TableCell align="center" sx={{ fontWeight: 700 }}>Type</TableCell>
+
+              {/* Sortable: Size */}
+              <TableCell align="center" sx={{ fontWeight: 700 }}>
+                <TableSortLabel
+                  active={orderBy === 'size'}
+                  direction={orderBy === 'size' ? order : 'asc'}
+                  onClick={() => handleRequestSort('size')}
+                >
+                  Size
+                </TableSortLabel>
               </TableCell>
-              <TableCell
-                align="center"
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                  borderColor: "divider",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Size
+
+              <TableCell sx={{ fontWeight: 700 }}>Uploaded By</TableCell>
+
+              {/* Sortable: Date (Default) */}
+              <TableCell align="center" sx={{ fontWeight: 700 }}>
+                <TableSortLabel
+                  active={orderBy === 'uploadedAt'}
+                  direction={orderBy === 'uploadedAt' ? order : 'asc'}
+                  onClick={() => handleRequestSort('uploadedAt')}
+                >
+                  Date
+                </TableSortLabel>
               </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                  borderColor: "divider",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Uploaded By
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                  borderColor: "divider",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Date
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                  borderColor: "divider",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Actions
-              </TableCell>
+
+              <TableCell sx={{ fontWeight: 700 }}>Tags</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
-            {dummyArtifacts.length > 0 ? (
-              dummyArtifacts.map((artifact, index) => (
+            {sortedAndFiltered.length > 0 ? (
+              sortedAndFiltered.map((artifact) => (
                 <TableRow
                   key={artifact.id}
+                  hover
                   sx={{
                     "&:hover": {
                       bgcolor: "action.hover",
-                      "& .action-btn": {
-                        opacity: 1,
-                      },
+                      "& .action-btn": { opacity: 1 },
                     },
-                    transition: "background-color 0.2s",
                   }}
                 >
-                  {/* File Name */}
                   <TableCell sx={{ py: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Box
@@ -281,116 +676,101 @@ export default function ProjectArtifactsSection({ project }) {
                       >
                         <FileIcon color="primary" sx={{ fontSize: 24 }} />
                       </Box>
-                      <Box>
-                        <Typography variant="body2" fontWeight={700}>
-                          {artifact.name}
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" fontWeight={700}>
+                        {artifact.originalFilename}
+                      </Typography>
                     </Box>
                   </TableCell>
 
-                  {/* Type */}
                   <TableCell align="center">
                     <Chip
                       label={artifact.type}
                       size="small"
                       color={getFileTypeColor(artifact.type)}
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: "0.7rem",
-                        height: 26,
-                        minWidth: 60,
-                      }}
                     />
                   </TableCell>
 
-                  {/* Size */}
                   <TableCell align="center">
-                    <Typography variant="body2" color="text.secondary">
-                      {artifact.size}
-                    </Typography>
+                    {(artifact.size / 1024).toFixed(1)} KB
                   </TableCell>
 
-                  {/* Uploaded By */}
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {artifact.uploadedBy}
+                      {artifact.uploadedBy || "Unknown"}
                     </Typography>
                   </TableCell>
 
-                  {/* Date */}
                   <TableCell align="center">
-                    <Typography variant="body2" color="text.secondary">
-                      {artifact.uploadedDate}
-                    </Typography>
+                    {artifact.uploadedAt
+                      ? new Date(artifact.uploadedAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })
+                      : "N/A"}
                   </TableCell>
 
-                  {/* Actions */}
+                  <TableCell>
+                    {artifact.tags?.split(",").map((tag, idx) => (
+                      <Chip
+                        key={idx}
+                        label={tag.trim()}
+                        size="small"
+                        sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }}
+                      />
+                    ))}
+                  </TableCell>
+
                   <TableCell align="center">
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 0.5,
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Tooltip title="Download" arrow placement="top">
-                        <IconButton
-                          className="action-btn"
-                          size="small"
-                          onClick={() => handleDownload(artifact.id)}
-                          sx={{
-                            opacity: 0.6,
-                            transition: "all 0.2s",
-                            "&:hover": {
-                              bgcolor: "primary.main",
-                              color: "white",
-                              opacity: 1,
-                            },
-                          }}
-                        >
-                          <DownloadIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete" arrow placement="top">
-                        <IconButton
-                          className="action-btn"
-                          size="small"
-                          onClick={() => handleDelete(artifact.id)}
-                          sx={{
-                            opacity: 0.6,
-                            transition: "all 0.2s",
-                            "&:hover": {
-                              bgcolor: "error.main",
-                              color: "white",
-                              opacity: 1,
-                            },
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
+                    <Tooltip title="Download">
+                      <IconButton
+                        className="action-btn"
+                        size="small"
+                        onClick={() => handleDownload(artifact)}
+                        sx={{ opacity: 0.6, transition: '0.2s' }}
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Delete">
+                      <IconButton
+                        className="action-btn"
+                        size="small"
+                        onClick={() => handleDelete(artifact)}
+                        sx={{
+                          opacity: 0.6,
+                          transition: '0.2s',
+                          "&:hover": {
+                            bgcolor: "error.main",
+                            color: "white",
+                          },
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                  <Box>
+                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <DescriptionIcon
                       sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
                     />
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      No Artifacts Yet
+                    <Typography variant="h6" color="text.secondary">
+                      No Artifacts Found
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Click "Upload File" to add documents to this project
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {search ? "Try adjusting your search terms" : "This project has no documents yet"}
                     </Typography>
+                    {!search && (
+                       <Button variant="outlined" startIcon={<UploadIcon />} onClick={() => setOpenUpload(true)}>
+                         Upload First File
+                       </Button>
+                    )}
                   </Box>
                 </TableCell>
               </TableRow>
@@ -398,6 +778,15 @@ export default function ProjectArtifactsSection({ project }) {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* UPLOAD MODAL */}
+      <ArtifactUploadModal
+        open={openUpload}
+        onClose={() => setOpenUpload(false)}
+        projectId={project.id}
+        username={username}
+        onUploaded={loadArtifacts}
+      />
     </Paper>
   );
 }
