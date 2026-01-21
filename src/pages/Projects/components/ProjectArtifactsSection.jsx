@@ -418,6 +418,7 @@ import {
   Chip,
   Button,
   TextField,
+  TableSortLabel, // Added for sorting
 } from "@mui/material";
 
 import {
@@ -426,9 +427,11 @@ import {
   Delete as DeleteIcon,
   InsertDriveFile as FileIcon,
   CloudUpload as UploadIcon,
+  FilterList as FilterIcon,
 } from "@mui/icons-material";
 
-import { gradients } from "../../../styles/theme";
+// Ensure this path is correct for your project
+import { gradients } from "../../../styles/theme"; 
 
 import {
   fetchArtifacts,
@@ -442,8 +445,11 @@ export default function ProjectArtifactsSection({ project, username }) {
   const [artifacts, setArtifacts] = useState([]);
   const [search, setSearch] = useState("");
   const [openUpload, setOpenUpload] = useState(false);
+  
+  // --- NEW: Sorting State ---
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('uploadedAt');
 
-  // Load artifacts from backend
   useEffect(() => {
     loadArtifacts();
   }, []);
@@ -457,37 +463,50 @@ export default function ProjectArtifactsSection({ project, username }) {
     }
   };
 
-  const openModal = () => setOpenUpload(true);
-  const closeModal = () => setOpenUpload(false);
+  // --- NEW: Sorting Logic ---
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const sortArtifacts = (array) => {
+    return array.sort((a, b) => {
+      // Handle null values safely
+      const aValue = a[orderBy] || '';
+      const bValue = b[orderBy] || '';
+
+      if (bValue < aValue) {
+        return order === 'asc' ? 1 : -1;
+      }
+      if (bValue > aValue) {
+        return order === 'asc' ? -1 : 1;
+      }
+      return 0;
+    });
+  };
 
   const getFileTypeColor = (type) => {
     switch (type?.toUpperCase()) {
-      case "PDF":
-        return "error";
-      case "FIGMA":
-        return "secondary";
-      case "SQL":
-        return "info";
-      case "DOCX":
-        return "primary";
-      case "ZIP":
-        return "warning";
-      default:
-        return "default";
+      case "PDF": return "error";
+      case "FIGMA": return "secondary";
+      case "SQL": return "info";
+      case "DOCX": return "primary";
+      case "ZIP": return "warning";
+      case "IMAGE": return "success"; // Added for your new Modal type
+      default: return "default";
     }
   };
 
+  // Filter then Sort
   const filtered = artifacts.filter((a) =>
-    a.originalFilename?.toLowerCase().includes(search.toLowerCase()),
+    a.originalFilename?.toLowerCase().includes(search.toLowerCase())
   );
+  const sortedAndFiltered = sortArtifacts([...filtered]);
 
   const handleDownload = async (artifact) => {
     try {
-      await downloadArtifact(
-        project.id,
-        artifact.id,
-        artifact.originalFilename,
-      );
+      await downloadArtifact(project.id, artifact.id, artifact.originalFilename);
     } catch (error) {
       console.error("Download failed:", error);
     }
@@ -516,7 +535,7 @@ export default function ProjectArtifactsSection({ project, username }) {
       {/* HEADER */}
       <Box
         sx={{
-          background: gradients.orange,
+          background: gradients.orange, // Make sure 'gradients' is imported or defined
           color: "white",
           p: 2.5,
           display: "flex",
@@ -543,7 +562,7 @@ export default function ProjectArtifactsSection({ project, username }) {
               Project Artifacts
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              {filtered.length} files • Documents & Resources
+              {sortedAndFiltered.length} files • Documents & Resources
             </Typography>
           </Box>
         </Box>
@@ -555,16 +574,23 @@ export default function ProjectArtifactsSection({ project, username }) {
             placeholder="Search files..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ bgcolor: "white", borderRadius: 1, width: 220 }}
+            sx={{ 
+              bgcolor: "white", 
+              borderRadius: 1, 
+              width: 220,
+              "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: "transparent" },
+              }
+            }}
           />
 
           <Button
             variant="contained"
             startIcon={<UploadIcon />}
-            onClick={openModal}
+            onClick={() => setOpenUpload(true)}
             sx={{
               bgcolor: "white",
-              color: "warning.main",
+              color: "warning.main", // Matches the orange theme
               fontWeight: 600,
               boxShadow: 2,
               "&:hover": {
@@ -583,48 +609,61 @@ export default function ProjectArtifactsSection({ project, username }) {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  bgcolor: "background.default",
-                  borderBottom: 2,
-                }}
-              >
-                File Name
+              {/* Sortable: File Name */}
+              <TableCell sx={{ fontWeight: 700, bgcolor: "background.default", borderBottom: 2 }}>
+                <TableSortLabel
+                  active={orderBy === 'originalFilename'}
+                  direction={orderBy === 'originalFilename' ? order : 'asc'}
+                  onClick={() => handleRequestSort('originalFilename')}
+                >
+                  File Name
+                </TableSortLabel>
               </TableCell>
+
+              <TableCell align="center" sx={{ fontWeight: 700 }}>Type</TableCell>
+
+              {/* Sortable: Size */}
               <TableCell align="center" sx={{ fontWeight: 700 }}>
-                Type
+                <TableSortLabel
+                  active={orderBy === 'size'}
+                  direction={orderBy === 'size' ? order : 'asc'}
+                  onClick={() => handleRequestSort('size')}
+                >
+                  Size
+                </TableSortLabel>
               </TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700 }}>
-                Size
-              </TableCell>
+
               <TableCell sx={{ fontWeight: 700 }}>Uploaded By</TableCell>
+
+              {/* Sortable: Date (Default) */}
               <TableCell align="center" sx={{ fontWeight: 700 }}>
-                Date
+                <TableSortLabel
+                  active={orderBy === 'uploadedAt'}
+                  direction={orderBy === 'uploadedAt' ? order : 'asc'}
+                  onClick={() => handleRequestSort('uploadedAt')}
+                >
+                  Date
+                </TableSortLabel>
               </TableCell>
+
               <TableCell sx={{ fontWeight: 700 }}>Tags</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700 }}>
-                Actions
-              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
-            {filtered.length > 0 ? (
-              filtered.map((artifact) => (
+            {sortedAndFiltered.length > 0 ? (
+              sortedAndFiltered.map((artifact) => (
                 <TableRow
                   key={artifact.id}
                   hover
                   sx={{
                     "&:hover": {
                       bgcolor: "action.hover",
-                      "& .action-btn": {
-                        opacity: 1,
-                      },
+                      "& .action-btn": { opacity: 1 },
                     },
                   }}
                 >
-                  {/* File Name */}
                   <TableCell sx={{ py: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Box
@@ -643,7 +682,6 @@ export default function ProjectArtifactsSection({ project, username }) {
                     </Box>
                   </TableCell>
 
-                  {/* Type */}
                   <TableCell align="center">
                     <Chip
                       label={artifact.type}
@@ -652,44 +690,44 @@ export default function ProjectArtifactsSection({ project, username }) {
                     />
                   </TableCell>
 
-                  {/* Size */}
                   <TableCell align="center">
                     {(artifact.size / 1024).toFixed(1)} KB
                   </TableCell>
 
-                  {/* Uploaded By */}
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
                       {artifact.uploadedBy || "Unknown"}
                     </Typography>
                   </TableCell>
 
-                  {/* Date */}
                   <TableCell align="center">
                     {artifact.uploadedAt
-                      ? new Date(artifact.uploadedAt).toLocaleDateString()
+                      ? new Date(artifact.uploadedAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })
                       : "N/A"}
                   </TableCell>
 
-                  {/* Tags */}
                   <TableCell>
                     {artifact.tags?.split(",").map((tag, idx) => (
                       <Chip
                         key={idx}
                         label={tag.trim()}
                         size="small"
-                        sx={{ mr: 0.5, mb: 0.5 }}
+                        sx={{ mr: 0.5, mb: 0.5, fontSize: '0.7rem' }}
                       />
                     ))}
                   </TableCell>
 
-                  {/* Actions */}
                   <TableCell align="center">
                     <Tooltip title="Download">
                       <IconButton
                         className="action-btn"
                         size="small"
                         onClick={() => handleDownload(artifact)}
+                        sx={{ opacity: 0.6, transition: '0.2s' }}
                       >
                         <DownloadIcon fontSize="small" />
                       </IconButton>
@@ -701,6 +739,8 @@ export default function ProjectArtifactsSection({ project, username }) {
                         size="small"
                         onClick={() => handleDelete(artifact)}
                         sx={{
+                          opacity: 0.6,
+                          transition: '0.2s',
                           "&:hover": {
                             bgcolor: "error.main",
                             color: "white",
@@ -716,16 +756,21 @@ export default function ProjectArtifactsSection({ project, username }) {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                  <Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <DescriptionIcon
                       sx={{ fontSize: 64, color: "text.disabled", mb: 2 }}
                     />
                     <Typography variant="h6" color="text.secondary">
-                      No Artifacts Yet
+                      No Artifacts Found
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Click "Upload File" to add documents to this project
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {search ? "Try adjusting your search terms" : "This project has no documents yet"}
                     </Typography>
+                    {!search && (
+                       <Button variant="outlined" startIcon={<UploadIcon />} onClick={() => setOpenUpload(true)}>
+                         Upload First File
+                       </Button>
+                    )}
                   </Box>
                 </TableCell>
               </TableRow>
@@ -737,7 +782,7 @@ export default function ProjectArtifactsSection({ project, username }) {
       {/* UPLOAD MODAL */}
       <ArtifactUploadModal
         open={openUpload}
-        onClose={closeModal}
+        onClose={() => setOpenUpload(false)}
         projectId={project.id}
         username={username}
         onUploaded={loadArtifacts}
