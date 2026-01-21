@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,133 +6,171 @@ import {
   Typography,
   Box,
   alpha,
+  Avatar,
+  CircularProgress
 } from "@mui/material";
-import { Warning as WarningIcon } from "@mui/icons-material";
+import { 
+  WarningAmber as WarningIcon, 
+  DeleteForever as DeleteIcon 
+} from "@mui/icons-material";
 
 export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Wrapper to handle loading state
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm(); // Waits for the API call to finish
+      // Dialog usually closes via parent state, so we don't manually close here
+    } catch (error) {
+      console.error("Delete failed", error);
+      setIsDeleting(false); // Only stop loading if it failed
+    }
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={!isDeleting ? onClose : undefined} // Prevent closing while deleting
       maxWidth="xs"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.1)",
+          overflow: "hidden" // Keeps the clean look
         },
       }}
     >
       <DialogContent sx={{ p: 0 }}>
-        {/* Warning Icon */}
+        
+        {/* 1. Big Warning Header */}
         <Box
           sx={{
+            bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
+            py: 4,
             display: "flex",
             justifyContent: "center",
-            pt: 4,
-            pb: 2,
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+            borderBottom: "1px solid",
+            borderColor: (theme) => alpha(theme.palette.error.main, 0.1),
           }}
         >
           <Box
             sx={{
-              width: 64,
-              height: 64,
+              width: 72,
+              height: 72,
               borderRadius: "50%",
-              bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+              bgcolor: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
             }}
           >
-            <WarningIcon sx={{ fontSize: 32, color: "error.main" }} />
+            <WarningIcon sx={{ fontSize: 40, color: "error.main" }} />
+          </Box>
+          <Box sx={{ textAlign: "center", px: 3 }}>
+            <Typography variant="h6" fontWeight={800} color="text.primary">
+              Delete User?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              You are about to permanently delete this account.
+            </Typography>
           </Box>
         </Box>
 
-        {/* Content */}
-        <Box sx={{ px: 4, pb: 3, textAlign: "center" }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Delete User
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Are you sure you want to delete this user?
-          </Typography>
-
+        {/* 2. User Preview Card */}
+        <Box sx={{ px: 3, py: 3 }}>
           {user && (
             <Box
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: "background.default",
                 border: "1px solid",
                 borderColor: "divider",
-                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                bgcolor: "background.paper"
               }}
             >
-              <Typography variant="body2" fontWeight={600} gutterBottom>
-                {user.fullName}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {user.email}
-              </Typography>
+              <Avatar 
+                sx={{ 
+                  bgcolor: "primary.light", 
+                  color: "primary.main",
+                  fontWeight: 700 
+                }}
+              >
+                {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {user.fullName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {user.email}
+                </Typography>
+              </Box>
             </Box>
           )}
 
+          {/* 3. Consequence Warning */}
           <Box
             sx={{
               mt: 2,
-              p: 2,
+              p: 1.5,
               borderRadius: 2,
-              bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
-              border: (theme) =>
-                `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+              bgcolor: "error.lighter", // Ensure you have this or use alpha
+              bgcolor: (theme) => alpha(theme.palette.error.main, 0.05),
+              color: "error.dark",
+              display: "flex",
+              gap: 1.5,
+              alignItems: "start"
             }}
           >
-            <Typography variant="caption" color="warning.dark">
-              ⚠️ This action cannot be undone. All user data will be permanently
-              removed.
+            <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.5 }}>
+              ⚠️ Warning: This action cannot be undone. All associated data (projects, files, logs) will be removed immediately.
             </Typography>
           </Box>
         </Box>
 
-        {/* Footer Actions */}
+        {/* 4. Footer Actions */}
         <Box
           sx={{
-            px: 4,
-            py: 3,
-            borderTop: 1,
+            p: 3,
+            bgcolor: "grey.50",
+            borderTop: "1px solid",
             borderColor: "divider",
-            bgcolor: (theme) => alpha(theme.palette.grey[50], 0.5),
             display: "flex",
-            gap: 2,
-            justifyContent: "flex-end",
+            justifyContent: "space-between", // Spaced out for safety
+            gap: 2
           }}
         >
           <Button
             onClick={onClose}
-            variant="outlined"
-            sx={{
-              px: 3,
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 2,
-              minWidth: 100,
-            }}
+            disabled={isDeleting}
+            color="inherit"
+            sx={{ fontWeight: 600, color: "text.secondary" }}
           >
             Cancel
           </Button>
           <Button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             variant="contained"
             color="error"
-            sx={{
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+            sx={{ 
+              fontWeight: 700, 
               px: 3,
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 2,
-              minWidth: 100,
+              boxShadow: (theme) => `0 8px 16px ${alpha(theme.palette.error.main, 0.24)}`
             }}
           >
-            Delete
+            {isDeleting ? "Deleting..." : "Yes, Delete User"}
           </Button>
         </Box>
       </DialogContent>
