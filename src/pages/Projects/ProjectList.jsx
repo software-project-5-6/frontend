@@ -19,6 +19,8 @@ import {
   Fab,
   CircularProgress,
   Alert,
+  TablePagination, // Imported for pagination
+  TableSortLabel,  // Imported for sorting
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -31,6 +33,7 @@ import {
   Folder as FolderIcon,
   AttachFile as AttachFileIcon,
   People as PeopleIcon,
+  Refresh as RefreshIcon, // Added Refresh Icon
 } from "@mui/icons-material";
 import { gradients } from "../../styles/theme";
 import ViewProjectDialog from "./components/ViewProjectDialog";
@@ -46,13 +49,22 @@ export default function ProjectList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // --- NEW: Pagination State ---
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  // --- NEW: Sorting State ---
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('projectName');
+
+  // Dialog States
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
 
-  // Fetch projects on component mount
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -71,53 +83,57 @@ export default function ProjectList() {
     }
   };
 
-  // Filter projects based on search query
+  // --- NEW: Sorting Handlers ---
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  // --- NEW: Sorting Logic ---
+  const descendingComparator = (a, b, orderBy) => {
+    if (b[orderBy] < a[orderBy]) return -1;
+    if (b[orderBy] > a[orderBy]) return 1;
+    return 0;
+  };
+
+  const getComparator = (order, orderBy) => {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  };
+
   const filteredProjects = projects.filter((project) =>
     project.projectName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle navigation to project details
-  const handleProjectClick = (projectId) => {
-    navigate(`/projects/${projectId}`);
+  // --- NEW: Apply Sort and Pagination ---
+  const visibleProjects = filteredProjects
+    .sort(getComparator(order, orderBy))
+    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  // --- NEW: Pagination Handlers ---
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
 
-  // Handle View Dialog
-  const handleViewOpen = (project) => {
-    setSelectedProject(project);
-    setViewDialogOpen(true);
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
-  const handleViewClose = () => {
-    setViewDialogOpen(false);
-    setSelectedProject(null);
-  };
-
-  // Handle Edit Dialog
-  const handleEditOpen = (project) => {
-    setSelectedProject(project);
-    setEditDialogOpen(true);
-  };
-
-  const handleEditClose = () => {
-    setEditDialogOpen(false);
-    setSelectedProject(null);
-  };
-
-  // Handle Delete Dialog
-  const handleDeleteOpen = (project) => {
-    setSelectedProject(project);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteClose = () => {
-    setDeleteDialogOpen(false);
-    setSelectedProject(null);
-  };
-
+  // Navigation & Dialog Handlers (Kept same)
+  const handleProjectClick = (projectId) => navigate(`/projects/${projectId}`);
+  const handleViewOpen = (project) => { setSelectedProject(project); setViewDialogOpen(true); };
+  const handleViewClose = () => { setViewDialogOpen(false); setSelectedProject(null); };
+  const handleEditOpen = (project) => { setSelectedProject(project); setEditDialogOpen(true); };
+  const handleEditClose = () => { setEditDialogOpen(false); setSelectedProject(null); };
+  const handleDeleteOpen = (project) => { setSelectedProject(project); setDeleteDialogOpen(true); };
+  const handleDeleteClose = () => { setDeleteDialogOpen(false); setSelectedProject(null); };
+  
   const handleDeleteConfirm = async () => {
     try {
       await deleteProject(selectedProject.id);
-      // Remove project from state after successful deletion
       setProjects(projects.filter((p) => p.id !== selectedProject.id));
       handleDeleteClose();
     } catch (err) {
@@ -126,29 +142,8 @@ export default function ProjectList() {
     }
   };
 
-  // Handle Create Dialog
-  const handleCreateOpen = () => {
-    setCreateDialogOpen(true);
-  };
-
-  const handleCreateClose = () => {
-    setCreateDialogOpen(false);
-  };
-
-  const handleCreateProject = (newProject) => {
-    // Refresh the projects list after creation
-    fetchProjects();
-  };
-
-  // Handle Edit Save - FIXED: Now properly refreshes the list
-  const handleEditSave = async (updatedProject) => {
-    // Refresh the projects list after update
-    await fetchProjects();
-  };
-
   return (
     <Container maxWidth="xl">
-      {/* Header Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} color="text.primary" mb={1}>
           Project Spaces
@@ -158,60 +153,40 @@ export default function ProjectList() {
         </Typography>
       </Box>
 
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      {/* Search and Add Button Section */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          gap: 2,
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Search Field - Top Left */}
-        <TextField
-          placeholder="Search projects..."
-          variant="outlined"
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{
-            minWidth: 300,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 2,
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-          }}
-        />
+      {/* Controls Section */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, gap: 2, flexWrap: "wrap" }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField
+            placeholder="Search projects..."
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ minWidth: 300, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            InputProps={{
+              startAdornment: (<InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>),
+            }}
+          />
+          {/* NEW: Refresh Button */}
+          <Tooltip title="Refresh List">
+            <IconButton onClick={fetchProjects} sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
-        {/* Add Project Button - Top Right (Admin Only) */}
         <ShowForAdmin>
           <Tooltip title="Create New Project" arrow>
             <Fab
               color="primary"
               aria-label="add"
               size="medium"
-              onClick={handleCreateOpen}
+              onClick={() => setCreateDialogOpen(true)}
               sx={{
                 background: gradients.primary,
-                "&:hover": {
-                  background: gradients.primary,
-                  transform: "scale(1.05)",
-                },
+                "&:hover": { background: gradients.primary, transform: "scale(1.05)" },
                 transition: "transform 0.2s",
               }}
             >
@@ -221,236 +196,119 @@ export default function ProjectList() {
         </ShowForAdmin>
       </Box>
 
-      {/* Projects Table */}
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>
       ) : (
-        <TableContainer
-          component={Paper}
-          sx={{
-            borderRadius: 3,
-            boxShadow: 3,
-          }}
-        >
+        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 3 }}>
           <Table>
             <TableHead>
-              <TableRow
-                sx={{
-                  background: gradients.primary,
-                }}
-              >
-                <TableCell
-                  sx={{ color: "white", fontWeight: 600 }}
-                  align="center"
-                >
-                  Project ID
-                </TableCell>
+              <TableRow sx={{ background: gradients.primary }}>
+                <TableCell sx={{ color: "white", fontWeight: 600 }} align="center">Project ID</TableCell>
+                
+                {/* SORTABLE HEADER: PROJECT NAME */}
                 <TableCell sx={{ color: "white", fontWeight: 600 }}>
-                  Project Name
-                </TableCell>
-                <TableCell
-                  sx={{ color: "white", fontWeight: 600 }}
-                  align="center"
-                >
-                  Team Members
-                </TableCell>
-                <TableCell
-                  sx={{ color: "white", fontWeight: 600 }}
-                  align="center"
-                >
-                  Artifact Count
-                </TableCell>
-                <TableCell sx={{ color: "white", fontWeight: 600 }}>
-                  Client Reference
-                </TableCell>
-                <ShowForAdmin>
-                  <TableCell
-                    sx={{ color: "white", fontWeight: 600 }}
-                    align="center"
+                  <TableSortLabel
+                    active={orderBy === 'projectName'}
+                    direction={orderBy === 'projectName' ? order : 'asc'}
+                    onClick={() => handleRequestSort('projectName')}
+                    sx={{
+                      '&.MuiTableSortLabel-root': { color: 'white' },
+                      '&.MuiTableSortLabel-root:hover': { color: 'rgba(255,255,255,0.8)' },
+                      '&.Mui-active': { color: 'white' },
+                      '& .MuiTableSortLabel-icon': { color: 'white !important' },
+                    }}
                   >
-                    Price
+                    Project Name
+                  </TableSortLabel>
+                </TableCell>
+
+                <TableCell sx={{ color: "white", fontWeight: 600 }} align="center">Team Members</TableCell>
+                <TableCell sx={{ color: "white", fontWeight: 600 }} align="center">Artifact Count</TableCell>
+                <TableCell sx={{ color: "white", fontWeight: 600 }}>Client Reference</TableCell>
+                
+                <ShowForAdmin>
+                  {/* SORTABLE HEADER: PRICE */}
+                  <TableCell sx={{ color: "white", fontWeight: 600 }} align="center">
+                    <TableSortLabel
+                      active={orderBy === 'price'}
+                      direction={orderBy === 'price' ? order : 'asc'}
+                      onClick={() => handleRequestSort('price')}
+                      sx={{
+                        '&.MuiTableSortLabel-root': { color: 'white' },
+                        '&.Mui-active': { color: 'white' },
+                        '& .MuiTableSortLabel-icon': { color: 'white !important' },
+                      }}
+                    >
+                      Price
+                    </TableSortLabel>
                   </TableCell>
                 </ShowForAdmin>
-                <TableCell
-                  sx={{ color: "white", fontWeight: 600 }}
-                  align="center"
-                >
-                  Actions
-                </TableCell>
+                
+                <TableCell sx={{ color: "white", fontWeight: 600 }} align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredProjects.map((project, index) => (
+              {visibleProjects.map((project, index) => (
                 <TableRow
                   key={project.id}
                   sx={{
-                    "&:hover": {
-                      bgcolor: "action.hover",
-                    },
-                    bgcolor:
-                      index % 2 === 0 ? "background.paper" : "action.hover",
+                    "&:hover": { bgcolor: "action.hover" },
+                    bgcolor: index % 2 === 0 ? "background.paper" : "action.hover",
                   }}
                 >
-                  {/* Project ID */}
                   <TableCell align="center">
-                    <Chip
-                      label={project.id}
-                      size="small"
-                      color="default"
-                      variant="outlined"
-                    />
+                    <Chip label={project.id} size="small" color="default" variant="outlined" />
                   </TableCell>
-
-                  {/* Project Name */}
+                  
                   <TableCell>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        cursor: "pointer",
-                        "&:hover": {
-                          "& .MuiTypography-root": {
-                            color: "primary.main",
-                            textDecoration: "underline",
-                          },
-                        },
-                      }}
-                      onClick={() => handleProjectClick(project.id)}
-                    >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer", "&:hover": { "& .MuiTypography-root": { color: "primary.main", textDecoration: "underline" } } }} onClick={() => handleProjectClick(project.id)}>
                       <FolderIcon color="primary" />
-                      <Typography variant="body2" fontWeight={600}>
-                        {project.projectName}
-                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>{project.projectName}</Typography>
                     </Box>
                   </TableCell>
 
-                  {/* Team Members Count */}
                   <TableCell align="center">
-                    <Chip
-                      icon={<PeopleIcon />}
-                      label={project.userCount || 0}
-                      size="small"
-                      color="secondary"
-                      variant="outlined"
-                    />
+                    <Chip icon={<PeopleIcon />} label={project.userCount || 0} size="small" color="secondary" variant="outlined" />
                   </TableCell>
 
-                  {/* Artifact Count */}
                   <TableCell align="center">
-                    <Chip
-                      icon={<AttachFileIcon />}
-                      label={project.artifactCount || 0}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
+                    <Chip icon={<AttachFileIcon />} label={project.artifactCount || 0} size="small" color="primary" variant="outlined" />
                   </TableCell>
 
-                  {/* Client Reference */}
                   <TableCell>
                     <Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          mb: 0.5,
-                        }}
-                      >
-                        <EmailIcon
-                          sx={{ fontSize: 14, color: "text.secondary" }}
-                        />
-                        <Typography variant="body2" fontSize="0.8rem">
-                          {project.clientEmail || "N/A"}
-                        </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                        <EmailIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+                        <Typography variant="body2" fontSize="0.8rem">{project.clientEmail || "N/A"}</Typography>
                       </Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                      >
-                        <PhoneIcon
-                          sx={{ fontSize: 14, color: "text.secondary" }}
-                        />
-                        <Typography variant="body2" fontSize="0.8rem">
-                          {project.clientPhone || "N/A"}
-                        </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <PhoneIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+                        <Typography variant="body2" fontSize="0.8rem">{project.clientPhone || "N/A"}</Typography>
                       </Box>
                     </Box>
                   </TableCell>
 
-                  {/* Price (Admin Only) */}
                   <ShowForAdmin>
                     <TableCell align="center">
-                      <Chip
-                        label={`$${project.price?.toFixed(2) || "0.00"}`}
-                        size="small"
-                        color="success"
-                        variant="filled"
-                      />
+                      <Chip label={`$${project.price?.toFixed(2) || "0.00"}`} size="small" color="success" variant="filled" />
                     </TableCell>
                   </ShowForAdmin>
 
-                  {/* Actions */}
                   <TableCell align="center">
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 0.5,
-                        justifyContent: "center",
-                      }}
-                    >
-                      {/* View Button - Visible to all users */}
+                    <Box sx={{ display: "flex", gap: 0.5, justifyContent: "center" }}>
                       <Tooltip title="View Details" arrow>
-                        <IconButton
-                          size="small"
-                          color="info"
-                          onClick={() => handleViewOpen(project)}
-                          sx={{
-                            "&:hover": {
-                              bgcolor: "info.light",
-                              color: "white",
-                            },
-                          }}
-                        >
+                        <IconButton size="small" color="info" onClick={() => handleViewOpen(project)}>
                           <ViewIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-
-                      {/* Edit Button - Admin Only */}
                       <ShowForAdmin>
                         <Tooltip title="Edit Project" arrow>
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => handleEditOpen(project)}
-                            sx={{
-                              "&:hover": {
-                                bgcolor: "warning.light",
-                                color: "white",
-                              },
-                            }}
-                          >
+                          <IconButton size="small" color="warning" onClick={() => handleEditOpen(project)}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      </ShowForAdmin>
-
-                      {/* Delete Button - Admin Only */}
-                      <ShowForAdmin>
                         <Tooltip title="Delete Project" arrow>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteOpen(project)}
-                            sx={{
-                              "&:hover": {
-                                bgcolor: "error.light",
-                                color: "white",
-                              },
-                            }}
-                          >
+                          <IconButton size="small" color="error" onClick={() => handleDeleteOpen(project)}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -461,47 +319,33 @@ export default function ProjectList() {
               ))}
             </TableBody>
           </Table>
+          
+          {/* NEW: Pagination Controls */}
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredProjects.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </TableContainer>
       )}
 
       {/* No Results Message */}
       {!loading && filteredProjects.length === 0 && (
         <Box sx={{ textAlign: "center", py: 8 }}>
-          <Typography variant="h6" color="text.secondary">
-            No projects found
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Try adjusting your search query
-          </Typography>
+          <Typography variant="h6" color="text.secondary">No projects found</Typography>
+          <Typography variant="body2" color="text.secondary">Try adjusting your search query</Typography>
         </Box>
       )}
 
-      {/* Dialog Components */}
-      <ViewProjectDialog
-        open={viewDialogOpen}
-        onClose={handleViewClose}
-        project={selectedProject}
-      />
-
-      <EditProjectDialog
-        open={editDialogOpen}
-        onClose={handleEditClose}
-        project={selectedProject}
-        onUpdate={handleEditSave}
-      />
-
-      <DeleteProjectDialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteClose}
-        project={selectedProject}
-        onConfirm={handleDeleteConfirm}
-      />
-
-      <CreateProjectDialog
-        open={createDialogOpen}
-        onClose={handleCreateClose}
-        onCreate={handleCreateProject}
-      />
+      {/* Dialogs (Unchanged) */}
+      <ViewProjectDialog open={viewDialogOpen} onClose={handleViewClose} project={selectedProject} />
+      <EditProjectDialog open={editDialogOpen} onClose={handleEditClose} project={selectedProject} onUpdate={fetchProjects} />
+      <DeleteProjectDialog open={deleteDialogOpen} onClose={handleDeleteClose} project={selectedProject} onConfirm={handleDeleteConfirm} />
+      <CreateProjectDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} onCreate={fetchProjects} />
     </Container>
   );
 }
