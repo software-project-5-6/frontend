@@ -296,7 +296,7 @@ export default function ProjectList() {
                   {/* Project ID */}
                   <TableCell align="center">
                     <Chip
-                      label={`#${project.id}`}
+                      label={project.id}
                       size="small"
                       color="default"
                       variant="outlined"
