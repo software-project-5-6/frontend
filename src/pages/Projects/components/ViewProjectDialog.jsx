@@ -14,7 +14,6 @@ import {
   Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  AttachMoney as MoneyIcon,
   CalendarToday as CalendarIcon,
   Folder as FolderIcon,
 } from "@mui/icons-material";
@@ -32,12 +31,6 @@ export default function ViewProjectDialog({ open, onClose, project }) {
       month: "short",
       day: "numeric",
     });
-  };
-
-  // Format price
-  const formatPrice = (price) => {
-    if (!price) return "$0.00";
-    return `$${price.toFixed(2)}`;
   };
 
   return (
@@ -170,90 +163,40 @@ export default function ViewProjectDialog({ open, onClose, project }) {
                     </Typography>
                   </Box>
 
-                  {/* Price and Date Row */}
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    {/* Price (Admin Only) */}
-                    {isAdmin() && (
-                      <Box
-                        sx={{
-                          flex: 1,
-                          p: 2,
-                          borderRadius: 2,
-                          bgcolor: "background.paper",
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                            mb: 1,
-                          }}
-                        >
-                          <MoneyIcon
-                            fontSize="small"
-                            sx={{ color: "text.disabled" }}
-                          />
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            fontWeight={600}
-                          >
-                            Price
-                          </Typography>
-                        </Box>
-                        <Typography
-                          variant="body1"
-                          fontWeight={600}
-                          color="success.main"
-                          sx={{ ml: 4 }}
-                        >
-                          {formatPrice(project.price)}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {/* Created Date */}
+                  {/* Created Date */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      p: 2,
+                      borderRadius: 2,
+                      bgcolor: "background.paper",
+                      border: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
                     <Box
                       sx={{
-                        flex: 1,
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: "background.paper",
-                        border: "1px solid",
-                        borderColor: "divider",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        mb: 1,
                       }}
                     >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          mb: 1,
-                        }}
-                      >
-                        <CalendarIcon
-                          fontSize="small"
-                          sx={{ color: "text.disabled" }}
-                        />
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          fontWeight={600}
-                        >
-                          Created
-                        </Typography>
-                      </Box>
+                      <CalendarIcon
+                        fontSize="small"
+                        sx={{ color: "text.disabled" }}
+                      />
                       <Typography
-                        variant="body1"
+                        variant="caption"
+                        color="text.secondary"
                         fontWeight={600}
-                        sx={{ ml: 4 }}
                       >
-                        {formatDate(project.createdAt || project.createdDate)}
+                        Created
                       </Typography>
                     </Box>
+                    <Typography variant="body1" fontWeight={600} sx={{ ml: 4 }}>
+                      {formatDate(project.createdAt || project.createdDate)}
+                    </Typography>
                   </Box>
 
                   {/* Artifact Count */}

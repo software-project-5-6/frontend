@@ -18,7 +18,6 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Image as ImageIcon,
-  AttachMoney as MoneyIcon,
 } from "@mui/icons-material";
 import { createProject } from "../../../api/projectApi";
 
@@ -26,7 +25,6 @@ export default function CreateProjectDialog({ open, onClose, onCreate }) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
     clientName: "",
     clientEmail: "",
     clientPhone: "",
@@ -90,7 +88,6 @@ export default function CreateProjectDialog({ open, onClose, onCreate }) {
     const projectData = {
       projectName: formData.name,
       description: formData.description,
-      price: formData.price ? parseFloat(formData.price) : 0,
       clientName: formData.clientName,
       clientEmail: formData.clientEmail,
       clientPhone: formData.clientPhone,
@@ -140,7 +137,6 @@ export default function CreateProjectDialog({ open, onClose, onCreate }) {
     setFormData({
       name: "",
       description: "",
-      price: "",
       clientName: "",
       clientEmail: "",
       clientPhone: "",
@@ -262,29 +258,6 @@ export default function CreateProjectDialog({ open, onClose, onCreate }) {
                   onChange={handleChange("description")}
                   placeholder="Brief project description (optional)"
                   size="small"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      bgcolor: "background.paper",
-                    },
-                  }}
-                />
-
-                <TextField
-                  label="Project Price"
-                  fullWidth
-                  type="number"
-                  value={formData.price}
-                  onChange={handleChange("price")}
-                  placeholder="0.00"
-                  size="small"
-                  InputProps={{
-                    startAdornment: (
-                      <MoneyIcon
-                        fontSize="small"
-                        sx={{ mr: 1, color: "text.disabled" }}
-                      />
-                    ),
-                  }}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       bgcolor: "background.paper",

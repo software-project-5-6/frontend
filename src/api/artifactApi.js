@@ -1,31 +1,4 @@
-import axios from "axios";
-import { fetchAuthSession } from "aws-amplify/auth";
-
-const BASE_URL =
-  import.meta.env.VITE_API_URL?.replace("/api/v1", "") ||
-  "http://localhost:8080";
-
-// Create a separate axios instance for artifacts with correct base URL
-const artifactApi = axios.create({
-  baseURL: BASE_URL,
-});
-
-// Add auth interceptor
-artifactApi.interceptors.request.use(
-  async (config) => {
-    try {
-      const session = await fetchAuthSession();
-      const idToken = session.tokens?.idToken?.toString();
-      if (idToken) {
-        config.headers.Authorization = `Bearer ${idToken}`;
-      }
-    } catch (error) {
-      console.error("Error fetching auth session:", error);
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+import api from "./axiosConfig";
 
 /**
  * Fetch all artifacts for a project
@@ -34,9 +7,7 @@ artifactApi.interceptors.request.use(
  */
 export const fetchArtifacts = async (projectId) => {
   try {
-    const response = await artifactApi.get(
-      `/api/projects/${projectId}/artifacts`,
-    );
+    const response = await api.get(`/projects/${projectId}/artifacts`);
     return response.data;
   } catch (error) {
     console.error("Error fetching artifacts:", error);
@@ -69,8 +40,8 @@ export const uploadArtifact = async (
     formData.append("uploadedBy", uploadedBy);
     formData.append("tags", tags);
 
-    const response = await artifactApi.post(
-      `/api/projects/${projectId}/artifacts/upload`,
+    const response = await api.post(
+      `/projects/${projectId}/artifacts/upload`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -93,8 +64,8 @@ export const uploadArtifact = async (
  */
 export const downloadArtifact = async (projectId, artifactId, filename) => {
   try {
-    const response = await artifactApi.get(
-      `/api/projects/${projectId}/artifacts/${artifactId}/download`,
+    const response = await api.get(
+      `/projects/${projectId}/artifacts/${artifactId}/download`,
       {
         responseType: "blob",
       },
@@ -125,11 +96,12 @@ export const downloadArtifact = async (projectId, artifactId, filename) => {
  * Delete artifact
  * @param {string} projectId
  * @param {number} artifactId
+ * @returns {Promise} API response
  */
 export const deleteArtifact = async (projectId, artifactId) => {
   try {
-    const response = await artifactApi.delete(
-      `/api/projects/${projectId}/artifacts/${artifactId}`,
+    const response = await api.delete(
+      `/projects/${projectId}/artifacts/${artifactId}`,
     );
     return response.data;
   } catch (error) {

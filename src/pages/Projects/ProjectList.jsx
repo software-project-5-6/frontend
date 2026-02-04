@@ -73,7 +73,7 @@ export default function ProjectList() {
 
   // Filter projects based on search query
   const filteredProjects = projects.filter((project) =>
-    project.projectName?.toLowerCase().includes(searchQuery.toLowerCase())
+    project.projectName?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Handle navigation to project details
@@ -265,14 +265,6 @@ export default function ProjectList() {
                 <TableCell sx={{ color: "white", fontWeight: 600 }}>
                   Client Reference
                 </TableCell>
-                <ShowForAdmin>
-                  <TableCell
-                    sx={{ color: "white", fontWeight: 600 }}
-                    align="center"
-                  >
-                    Price
-                  </TableCell>
-                </ShowForAdmin>
                 <TableCell
                   sx={{ color: "white", fontWeight: 600 }}
                   align="center"
@@ -379,18 +371,6 @@ export default function ProjectList() {
                       </Box>
                     </Box>
                   </TableCell>
-
-                  {/* Price (Admin Only) */}
-                  <ShowForAdmin>
-                    <TableCell align="center">
-                      <Chip
-                        label={`$${project.price?.toFixed(2) || "0.00"}`}
-                        size="small"
-                        color="success"
-                        variant="filled"
-                      />
-                    </TableCell>
-                  </ShowForAdmin>
 
                   {/* Actions */}
                   <TableCell align="center">

@@ -14,7 +14,6 @@ import {
   Phone as PhoneIcon,
   CalendarToday as CalendarIcon,
   Assessment as AssessmentIcon,
-  AttachMoney as MoneyIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../../styles/theme";
@@ -328,41 +327,6 @@ export default function ProjectInfoCard({ project }) {
                 </Box>
               </Box>
             </Grid>
-
-            {/* Project Price - Admin Only */}
-            <ShowForAdmin>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      bgcolor: "info.light",
-                      color: "info.dark",
-                      borderRadius: 1.5,
-                      p: 1,
-                      display: "flex",
-                    }}
-                  >
-                    <MoneyIcon sx={{ fontSize: 20 }} />
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      Project Budget
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={700}
-                      color="info.main"
-                    >
-                      {formatPrice(project.price)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
-            </ShowForAdmin>
           </Grid>
         </Box>
       </CardContent>

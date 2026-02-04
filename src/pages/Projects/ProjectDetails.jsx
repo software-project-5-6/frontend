@@ -83,6 +83,16 @@ export default function ProjectDetails() {
     fetchProjectDetails();
   }, [projectId, navigate]);
 
+  // Function to refresh project data (e.g., after artifact upload/delete)
+  const refreshProject = async () => {
+    try {
+      const data = await getProjectById(projectId);
+      setProject(data);
+    } catch (err) {
+      console.error("Error refreshing project:", err);
+    }
+  };
+
   // Check if user is APP_ADMIN or MANAGER of this project
   const canInviteMembers = () => {
     // Global admin can always invite
@@ -91,7 +101,7 @@ export default function ProjectDetails() {
     // Check if user is a MANAGER of this specific project
     if (project?.assignedUsers && userAttributes?.email) {
       const userRole = project.assignedUsers.find(
-        (user) => user.email === userAttributes.email
+        (user) => user.email === userAttributes.email,
       );
       return userRole?.role === "MANAGER";
     }
@@ -267,12 +277,8 @@ export default function ProjectDetails() {
       )}
 
       {/* Statistics Cards Row - Always visible */}
-      <Box sx={{ mb: 3 }}>
-        <Grid container spacing={2.5}>
-          <Grid item xs={12} sm={6} md={3}>
-            <ProjectStatsCards project={project} />
-          </Grid>
-        </Grid>
+      <Box sx={{ mb: 2.5 }}>
+        <ProjectStatsCards project={project} />
       </Box>
 
       {/* Tabbed Navigation */}
@@ -371,7 +377,10 @@ export default function ProjectDetails() {
           {/* Tab 2: Artifacts */}
           {currentTab === 2 && (
             <Box>
-              <ProjectArtifactsSection project={project} />
+              <ProjectArtifactsSection
+                project={project}
+                onArtifactChange={refreshProject}
+              />
             </Box>
           )}
         </Box>

@@ -18,7 +18,6 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Image as ImageIcon,
-  AttachMoney as MoneyIcon,
 } from "@mui/icons-material";
 import { updateProject } from "../../../api/projectApi";
 
@@ -31,7 +30,6 @@ export default function EditProjectDialog({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
     clientName: "",
     clientEmail: "",
     clientPhone: "",
@@ -48,7 +46,6 @@ export default function EditProjectDialog({
       setFormData({
         name: project.projectName || project.name || "",
         description: project.description || "",
-        price: project.price || "",
         clientName: project.clientName || "",
         clientEmail: project.clientEmail || "",
         clientPhone: project.clientPhone || "",
@@ -110,7 +107,6 @@ export default function EditProjectDialog({
     const projectData = {
       projectName: formData.name,
       description: formData.description,
-      price: formData.price ? parseFloat(formData.price) : 0,
       clientName: formData.clientName,
       clientEmail: formData.clientEmail,
       clientPhone: formData.clientPhone,
@@ -122,7 +118,7 @@ export default function EditProjectDialog({
     try {
       const response = await updateProject(
         project.projectId || project.id,
-        projectData
+        projectData,
       );
       console.log("Project updated successfully:", response);
 
@@ -277,29 +273,6 @@ export default function EditProjectDialog({
                 />
 
                 <TextField
-                  label="Project Price"
-                  fullWidth
-                  type="number"
-                  value={formData.price}
-                  onChange={handleChange("price")}
-                  placeholder="0.00"
-                  size="small"
-                  InputProps={{
-                    startAdornment: (
-                      <MoneyIcon
-                        fontSize="small"
-                        sx={{ mr: 1, color: "text.disabled" }}
-                      />
-                    ),
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      bgcolor: "background.paper",
-                    },
-                  }}
-                />
-
-                <TextField
                   label="Project Icon URL"
                   fullWidth
                   value={formData.iconUrl}
@@ -417,8 +390,6 @@ export default function EditProjectDialog({
                 />
               </Stack>
             </Box>
-
-            
           </Stack>
         </Box>
 

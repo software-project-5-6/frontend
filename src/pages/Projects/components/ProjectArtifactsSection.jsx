@@ -438,7 +438,11 @@ import {
 
 import ArtifactUploadModal from "./ArtifactUploadModal";
 
-export default function ProjectArtifactsSection({ project, username }) {
+export default function ProjectArtifactsSection({
+  project,
+  username,
+  onArtifactChange,
+}) {
   const [artifacts, setArtifacts] = useState([]);
   const [search, setSearch] = useState("");
   const [openUpload, setOpenUpload] = useState(false);
@@ -498,6 +502,9 @@ export default function ProjectArtifactsSection({ project, username }) {
     try {
       await deleteArtifact(project.id, artifact.id);
       loadArtifacts();
+      if (onArtifactChange) {
+        onArtifactChange();
+      }
     } catch (error) {
       console.error("Delete failed:", error);
     }
@@ -740,7 +747,12 @@ export default function ProjectArtifactsSection({ project, username }) {
         onClose={closeModal}
         projectId={project.id}
         username={username}
-        onUploaded={loadArtifacts}
+        onUploaded={() => {
+          loadArtifacts();
+          if (onArtifactChange) {
+            onArtifactChange();
+          }
+        }}
       />
     </Paper>
   );
