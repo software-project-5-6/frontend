@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     } else if (isPublicRoute) {
       setLoading(false); // Avoid blocking login/signup with spinner
     }
-  }, []); // 👈 Only run once on app mount
+  }, []); 
 
   const checkAuth = async () => {
     try {

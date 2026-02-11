@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { signUp, confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import {
