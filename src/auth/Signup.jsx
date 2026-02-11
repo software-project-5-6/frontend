@@ -34,7 +34,7 @@ export default function Signup() {
 
     // Validate password match
     if (password !== confirmPassword) {
-      setMessage("❌ Passwords do not match");
+      setMessage("Passwords do not match");
       setLoading(false);
       return;
     }
@@ -51,12 +51,12 @@ export default function Signup() {
         },
       });
       setStage("confirm");
-      setMessage("✅ Verification code sent to your email.");
+      setMessage("Verification code sent to your email.");
     } catch (error) {
       // Check if user already exists but not confirmed
       if (error.name === "UsernameExistsException") {
         setMessage(
-          "⚠️ This email is already registered. If you haven't verified, you can resend the code below."
+          "This email is already registered. If you haven't verified, you can resend the code below."
         );
         setStage("confirm");
       } else {
@@ -75,7 +75,7 @@ export default function Signup() {
       await resendSignUpCode({
         username: email,
       });
-      setMessage("✅ New verification code sent to your email.");
+      setMessage("New verification code sent to your email.");
     } catch (error) {
       setMessage("❌ " + error.message);
     } finally {
@@ -92,7 +92,7 @@ export default function Signup() {
         username: email,
         confirmationCode: confirmCode,
       });
-      setMessage("✅ Account confirmed! You can now log in.");
+      setMessage("Account confirmed! You can now log in.");
       window.location.href = "/login";
     } catch (error) {
       setMessage("❌ " + error.message);
@@ -183,7 +183,7 @@ export default function Signup() {
                     edge="end"
                     size="small"
                   >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                    {showPassword ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -213,7 +213,7 @@ export default function Signup() {
                     edge="end"
                     size="small"
                   >
-                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    {showConfirmPassword ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
               ),
