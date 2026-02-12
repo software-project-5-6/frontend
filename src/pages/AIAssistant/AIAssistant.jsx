@@ -7,18 +7,24 @@ import {
   IconButton,
   Avatar,
   Paper,
-  Skeleton,
   Fade,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Send as SendIcon,
   AutoAwesome as AIIcon,
-  Person as PersonIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { gradients } from "../../styles/theme";
 import { useAuth } from "../../context/AuthContext";
+import { getAllProjects } from "../../api/projectApi";
+import { askProject } from "../../api/chatApi";
 
 export const AIAssistant = () => {
   const { user } = useAuth();
@@ -30,10 +36,35 @@ export const AIAssistant = () => {
       timestamp: new Date(),
     },
   ]);
-  const [inputMessage, setInputMessage] = useState("");
+
   const [isSending, setIsSending] = useState(false);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState({ question: "" });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Fetch projects
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAllProjects();
+      setProjects(data);
+      if (data.length > 0) setSelectedProject(data[0].name); // default selection
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+      setError("Failed to load projects. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -44,19 +75,14 @@ export const AIAssistant = () => {
   };
 
   const getDisplayName = () => {
-    if (user?.username) {
-      return user.username;
-    }
-    if (user?.userId) {
-      return user.userId.split("-")[0];
-    }
+    if (user?.username) return user.username;
+    if (user?.userId) return user.userId.split("-")[0];
     return "User";
   };
 
   const getInitials = () => {
     const displayName = getDisplayName();
     if (!displayName || displayName === "User") return "U";
-
     const names = displayName.split(" ");
     if (names.length >= 2) {
       return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
@@ -65,43 +91,38 @@ export const AIAssistant = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isSending) return;
+    if (!query.question.trim() || isSending) return;
+
+    const questionText = query.question; // capture BEFORE clearing
 
     const userMessage = {
-      id: messages.length + 1,
+      id: Date.now(),
       type: "user",
-      text: inputMessage,
+      text: questionText,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputMessage("");
+    setQuery({ question: "" });
     setIsSending(true);
 
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
+    try {
+      const aiText = await askProject(selectedProject, {
+        question: questionText,
+      });
+
       const aiResponse = {
-        id: messages.length + 2,
+        id: Date.now() + 1,
         type: "ai",
-        text: getAIResponse(inputMessage),
+        text: aiText.answer,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (err) {
+      setError("Failed to get AI response");
+    } finally {
       setIsSending(false);
-    }, 1000);
-  };
-
-  const getAIResponse = (userInput) => {
-    const input = userInput.toLowerCase();
-
-    if (input.includes("project") || input.includes("projects")) {
-      return "I can help you manage your projects! You can create new projects, view existing ones, or analyze project data. What would you like to do?";
-    } else if (input.includes("help") || input.includes("what can you do")) {
-      return "I can assist you with:\n• Managing projects and tasks\n• Analyzing artifacts\n• Team collaboration\n• Generating reports\n• Answering questions about your work\n\nWhat would you like help with?";
-    } else if (input.includes("hello") || input.includes("hi")) {
-      return `Hello ${getDisplayName()}! How can I assist you today?`;
-    } else {
-      return "I understand you're asking about that. I'm here to help with your project management needs. Could you provide more details about what you'd like to know?";
     }
   };
 
@@ -145,23 +166,54 @@ export const AIAssistant = () => {
           borderColor: "divider",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Avatar
-            sx={{
-              background: gradients.primary,
-              width: 40,
-              height: 40,
-            }}
-          >
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 2, width: "90%" }}
+        >
+          <Avatar sx={{ background: gradients.primary, width: 40, height: 40 }}>
             <AIIcon />
           </Avatar>
-          <Box>
-            <Typography variant="h6" fontWeight={600}>
-              AI Assistant
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Always ready to help
-            </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flex: 1,
+              mb: 2,
+            }}
+          >
+            <Box>
+              <Typography variant="h6" fontWeight={600}>
+                AI Assistant
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Always ready to help
+              </Typography>
+            </Box>
+
+            {error && (
+              <Alert
+                severity="error"
+                sx={{ mb: 3, ml: 3 }}
+                onClose={() => setError(null)}
+              >
+                {error}
+              </Alert>
+            )}
+
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Current Project</InputLabel>
+              <Select
+                value={selectedProject}
+                label="Current Project"
+                onChange={(e) => setSelectedProject(e.target.value)}
+              >
+                {projects.map((project) => (
+                  <MenuItem key={project.id} value={project.id}>
+                    {project.projectName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
         </Box>
         <IconButton
@@ -169,253 +221,222 @@ export const AIAssistant = () => {
           sx={{
             background: gradients.primary,
             color: "white",
-            "&:hover": {
-              background: gradients.primary,
-              opacity: 0.9,
-            },
+            "&:hover": { background: gradients.primary, opacity: 0.9 },
           }}
         >
           <RefreshIcon />
         </IconButton>
       </Box>
 
-      {/* Messages Area */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          py: 3,
-          display: "flex",
-          flexDirection: "column",
-          gap: 3,
-        }}
-      >
-        {messages.map((message, index) => (
-          <Fade in={true} key={message.id} timeout={500}>
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                alignItems: "flex-start",
-                flexDirection: message.type === "user" ? "row-reverse" : "row",
-              }}
-            >
-              {/* Avatar */}
-              <Avatar
-                sx={{
-                  background:
-                    message.type === "ai"
-                      ? gradients.primary
-                      : gradients.purple,
-                  width: 36,
-                  height: 36,
-                  flexShrink: 0,
-                }}
-              >
-                {message.type === "ai" ? <AIIcon /> : getInitials()}
-              </Avatar>
-
-              {/* Message Content */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  maxWidth: "70%",
-                  background:
-                    message.type === "ai"
-                      ? (theme) => theme.palette.grey[100]
-                      : gradients.primary,
-                  color: message.type === "ai" ? "text.primary" : "white",
-                  borderRadius: 2,
-                  borderTopLeftRadius: message.type === "ai" ? 0 : 2,
-                  borderTopRightRadius: message.type === "user" ? 0 : 2,
-                }}
-              >
-                <Typography
-                  variant="body1"
-                  sx={{
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {message.text}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: "block",
-                    mt: 1,
-                    opacity: 0.7,
-                  }}
-                >
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Typography>
-              </Paper>
-            </Box>
-          </Fade>
-        ))}
-
-        {/* Typing Indicator */}
-        {isSending && (
-          <Fade in={true}>
-            <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-              <Avatar
-                sx={{
-                  background: gradients.primary,
-                  width: 36,
-                  height: 36,
-                }}
-              >
-                <AIIcon />
-              </Avatar>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  background: (theme) => theme.palette.grey[100],
-                  borderRadius: 2,
-                  borderTopLeftRadius: 0,
-                }}
-              >
-                <Box sx={{ display: "flex", gap: 0.5 }}>
-                  <Box
-                    className="typing-dot"
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                      animation: "typing 1.4s infinite",
-                      "@keyframes typing": {
-                        "0%, 60%, 100%": { opacity: 0.3 },
-                        "30%": { opacity: 1 },
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                      animation: "typing 1.4s infinite 0.2s",
-                      "@keyframes typing": {
-                        "0%, 60%, 100%": { opacity: 0.3 },
-                        "30%": { opacity: 1 },
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                      animation: "typing 1.4s infinite 0.4s",
-                      "@keyframes typing": {
-                        "0%, 60%, 100%": { opacity: 0.3 },
-                        "30%": { opacity: 1 },
-                      },
-                    }}
-                  />
-                </Box>
-              </Paper>
-            </Box>
-          </Fade>
-        )}
-
-        <div ref={messagesEndRef} />
-      </Box>
-
-      {/* Input Area */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 2,
-          borderRadius: 3,
-          background: (theme) => theme.palette.background.paper,
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-          <TextField
-            ref={inputRef}
-            fullWidth
-            multiline
-            maxRows={4}
-            placeholder="Type your message here..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isSending}
-            variant="outlined"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                background: (theme) => theme.palette.background.default,
-              },
-            }}
-          />
-          <IconButton
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isSending}
-            sx={{
-              background: gradients.primary,
-              color: "white",
-              width: 48,
-              height: 48,
-              "&:hover": {
-                background: gradients.primary,
-                opacity: 0.9,
-              },
-              "&:disabled": {
-                background: (theme) => theme.palette.action.disabledBackground,
-                color: (theme) => theme.palette.action.disabled,
-              },
-            }}
-          >
-            <SendIcon />
-          </IconButton>
+      {/* Messages */}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
         </Box>
-
-        {/* Suggested Prompts */}
-        {messages.length === 1 && (
+      ) : (
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
+        >
           <Box
             sx={{
+              flex: 1,
+              overflowY: "auto",
+              py: 3,
               display: "flex",
-              gap: 1,
-              mt: 2,
-              flexWrap: "wrap",
+              flexDirection: "column",
+              gap: 3,
             }}
           >
-            {[
-              "How can you help me?",
-              "Show my projects",
-              "What can you do?",
-            ].map((prompt, index) => (
-              <Chip
-                key={index}
-                label={prompt}
-                onClick={() => {
-                  setInputMessage(prompt);
-                  inputRef.current?.focus();
-                }}
+            {messages.map((message) => (
+              <Fade in={true} key={message.id} timeout={500}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "flex-start",
+                    flexDirection:
+                      message.type === "user" ? "row-reverse" : "row",
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      background:
+                        message.type === "ai"
+                          ? gradients.primary
+                          : gradients.purple,
+                      width: 36,
+                      height: 36,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {message.type === "ai" ? <AIIcon /> : getInitials()}
+                  </Avatar>
+
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      maxWidth: "70%",
+                      background:
+                        message.type === "ai"
+                          ? (theme) => theme.palette.grey[100]
+                          : gradients.primary,
+                      color: message.type === "ai" ? "text.primary" : "white",
+                      borderRadius: 2,
+                      borderTopLeftRadius: message.type === "ai" ? 0 : 2,
+                      borderTopRightRadius: message.type === "user" ? 0 : 2,
+                    }}
+                  >
+                    <Typography
+                      variant="body1"
+                      sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                    >
+                      {message.text}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{ display: "block", mt: 1, opacity: 0.7 }}
+                    >
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Typography>
+                  </Paper>
+                </Box>
+              </Fade>
+            ))}
+
+            {isSending && (
+              <Fade in={true}>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+                  <Avatar
+                    sx={{
+                      background: gradients.primary,
+                      width: 36,
+                      height: 36,
+                    }}
+                  >
+                    <AIIcon />
+                  </Avatar>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      background: (theme) => theme.palette.grey[100],
+                      borderRadius: 2,
+                      borderTopLeftRadius: 0,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                      {[0, 1, 2].map((i) => (
+                        <Box
+                          key={i}
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            bgcolor: "primary.main",
+                            animation: `typing 1.4s infinite ${i * 0.2}s`,
+                            "@keyframes typing": {
+                              "0%,60%,100%": { opacity: 0.3 },
+                              "30%": { opacity: 1 },
+                            },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Paper>
+                </Box>
+              </Fade>
+            )}
+
+            <div ref={messagesEndRef} />
+          </Box>
+
+          {/* Input Area */}
+          <Paper
+            elevation={3}
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              mt: 1,
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+              <TextField
+                ref={inputRef}
+                fullWidth
+                multiline
+                maxRows={4}
+                placeholder="Type your message here..."
+                value={query.question}
+                onChange={(e) => setQuery({ question: e.target.value })}
+                onKeyPress={handleKeyPress}
+                disabled={isSending}
+                variant="outlined"
                 sx={{
-                  cursor: "pointer",
-                  "&:hover": {
-                    background: gradients.primary,
-                    color: "white",
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    background: (theme) => theme.palette.background.default,
                   },
                 }}
               />
-            ))}
-          </Box>
-        )}
-      </Paper>
+              <IconButton
+                onClick={handleSendMessage}
+                disabled={!query.question.trim() || isSending}
+                sx={{
+                  background: gradients.primary,
+                  color: "white",
+                  width: 48,
+                  height: 48,
+                  "&:hover": { background: gradients.primary, opacity: 0.9 },
+                  "&:disabled": {
+                    background: (theme) =>
+                      theme.palette.action.disabledBackground,
+                    color: (theme) => theme.palette.action.disabled,
+                  },
+                }}
+              >
+                <SendIcon />
+              </IconButton>
+            </Box>
+
+            {messages.length === 1 && (
+              <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
+                {[
+                  "How can you help me?",
+                  "Show my projects",
+                  "What can you do?",
+                ].map((prompt, index) => (
+                  <Chip
+                    key={index}
+                    label={prompt}
+                    onClick={() => {
+                      setQuery({ question: prompt });
+                      inputRef.current?.focus();
+                    }}
+                    sx={{
+                      cursor: "pointer",
+                      "&:hover": {
+                        background: gradients.primary,
+                        color: "white",
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+          </Paper>
+        </Box>
+      )}
     </Box>
   );
 };
