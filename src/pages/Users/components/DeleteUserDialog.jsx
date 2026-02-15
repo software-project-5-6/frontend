@@ -7,11 +7,11 @@ import {
   Box,
   alpha,
   Avatar,
-  CircularProgress
+  CircularProgress,
 } from "@mui/material";
-import { 
-  WarningAmber as WarningIcon, 
-  DeleteForever as DeleteIcon 
+import {
+  WarningAmber as WarningIcon,
+  DeleteForever as DeleteIcon,
 } from "@mui/icons-material";
 
 export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
@@ -39,12 +39,11 @@ export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
         sx: {
           borderRadius: 3,
           boxShadow: "0 20px 60px rgba(0,0,0,0.1)",
-          overflow: "hidden" // Keeps the clean look
+          overflow: "hidden", // Keeps the clean look
         },
       }}
     >
       <DialogContent sx={{ p: 0 }}>
-        
         {/* 1. Big Warning Header */}
         <Box
           sx={{
@@ -68,7 +67,7 @@ export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
             }}
           >
             <WarningIcon sx={{ fontSize: 40, color: "error.main" }} />
@@ -95,14 +94,14 @@ export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
                 display: "flex",
                 alignItems: "center",
                 gap: 2,
-                bgcolor: "background.paper"
+                bgcolor: "background.paper",
               }}
             >
-              <Avatar 
-                sx={{ 
-                  bgcolor: "primary.light", 
+              <Avatar
+                sx={{
+                  bgcolor: "primary.light",
                   color: "primary.main",
-                  fontWeight: 700 
+                  fontWeight: 700,
                 }}
               >
                 {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
@@ -124,16 +123,20 @@ export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
               mt: 2,
               p: 1.5,
               borderRadius: 2,
-              bgcolor: "error.lighter", // Ensure you have this or use alpha
               bgcolor: (theme) => alpha(theme.palette.error.main, 0.05),
               color: "error.dark",
               display: "flex",
               gap: 1.5,
-              alignItems: "start"
+              alignItems: "start",
             }}
           >
-            <Typography variant="caption" fontWeight={600} sx={{ lineHeight: 1.5 }}>
-              ⚠️ Warning: This action cannot be undone. All associated data (projects, files, logs) will be removed immediately.
+            <Typography
+              variant="caption"
+              fontWeight={600}
+              sx={{ lineHeight: 1.5 }}
+            >
+              ⚠️ Warning: This action cannot be undone. All associated data
+              (projects, files, logs) will be removed immediately.
             </Typography>
           </Box>
         </Box>
@@ -147,7 +150,7 @@ export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
             borderColor: "divider",
             display: "flex",
             justifyContent: "space-between", // Spaced out for safety
-            gap: 2
+            gap: 2,
           }}
         >
           <Button
@@ -163,11 +166,18 @@ export default function DeleteUserDialog({ open, onClose, user, onConfirm }) {
             variant="contained"
             color="error"
             disabled={isDeleting}
-            startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
-            sx={{ 
-              fontWeight: 700, 
+            startIcon={
+              isDeleting ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <DeleteIcon />
+              )
+            }
+            sx={{
+              fontWeight: 700,
               px: 3,
-              boxShadow: (theme) => `0 8px 16px ${alpha(theme.palette.error.main, 0.24)}`
+              boxShadow: (theme) =>
+                `0 8px 16px ${alpha(theme.palette.error.main, 0.24)}`,
             }}
           >
             {isDeleting ? "Deleting..." : "Yes, Delete User"}
