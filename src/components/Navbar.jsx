@@ -165,6 +165,9 @@ export default function Navbar({ onMenuClick }) {
           }}
           transformOrigin={{ horizontal: "right", vertical: "top" }}
           anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          TransitionProps={{
+            timeout: 300,
+          }}
         >
           {/* User Info in Menu */}
           <Box sx={{ px: 2, py: 1.5 }}>
@@ -183,7 +186,16 @@ export default function Navbar({ onMenuClick }) {
           <Divider />
 
           {/* Profile Menu Item */}
-          <MenuItem onClick={handleProfile}>
+          <MenuItem
+            onClick={handleProfile}
+            sx={{
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                backgroundColor: "primary.light",
+                transform: "translateX(4px)",
+              },
+            }}
+          >
             <ListItemIcon>
               <PersonIcon fontSize="small" />
             </ListItemIcon>
@@ -191,7 +203,16 @@ export default function Navbar({ onMenuClick }) {
           </MenuItem>
 
           {/* Settings Menu Item */}
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem
+            onClick={handleMenuClose}
+            sx={{
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                backgroundColor: "primary.light",
+                transform: "translateX(4px)",
+              },
+            }}
+          >
             <ListItemIcon>
               <SettingsIcon fontSize="small" />
             </ListItemIcon>
@@ -201,7 +222,16 @@ export default function Navbar({ onMenuClick }) {
           <Divider />
 
           {/* Logout Menu Item */}
-          <MenuItem onClick={handleSignOut}>
+          <MenuItem
+            onClick={handleSignOut}
+            sx={{
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                backgroundColor: "error.light",
+                transform: "translateX(4px)",
+              },
+            }}
+          >
             <ListItemIcon>
               <LogoutIcon fontSize="small" color="error" />
             </ListItemIcon>

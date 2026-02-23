@@ -234,14 +234,8 @@ export const AIAssistant = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
+        <>
+          {/* Scrollable Messages Area */}
           <Box
             sx={{
               flex: 1,
@@ -359,15 +353,15 @@ export const AIAssistant = () => {
             <div ref={messagesEndRef} />
           </Box>
 
-          {/* Input Area */}
+          {/* Fixed Input Area at Bottom */}
           <Paper
             elevation={3}
             sx={{
               p: 2,
               borderRadius: 3,
-              mt: 1,
               borderTop: "1px solid",
               borderColor: "divider",
+              backgroundColor: "background.paper",
             }}
           >
             <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
@@ -435,7 +429,7 @@ export const AIAssistant = () => {
               </Box>
             )}
           </Paper>
-        </Box>
+        </>
       )}
     </Box>
   );

@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Box, Toolbar } from "@mui/material";
+import { Box, Toolbar, Fade } from "@mui/material";
+import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
 export default function MainLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -28,10 +30,13 @@ export default function MainLayout({ children }) {
           minHeight: "100vh",
           backgroundColor: "#f5f7fa",
           overflow: "auto",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
         <Toolbar /> {/* Spacer for AppBar */}
-        {children}
+        <Fade in={true} timeout={400} key={location.pathname}>
+          <Box>{children}</Box>
+        </Fade>
       </Box>
     </Box>
   );

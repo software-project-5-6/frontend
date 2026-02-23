@@ -235,7 +235,13 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
             boxSizing: "border-box",
             width: drawerWidth,
             borderRight: "1px solid rgba(0, 0, 0, 0.08)",
+            transition:
+              "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important",
           },
+        }}
+        transitionDuration={{
+          enter: 300,
+          exit: 250,
         }}
       >
         {drawer}
@@ -250,6 +256,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
             boxSizing: "border-box",
             width: drawerWidth,
             borderRight: "1px solid rgba(0, 0, 0, 0.08)",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           },
         }}
         open

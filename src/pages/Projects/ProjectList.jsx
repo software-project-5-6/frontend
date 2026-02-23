@@ -232,6 +232,10 @@ export default function ProjectList() {
           sx={{
             borderRadius: 3,
             boxShadow: 3,
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              boxShadow: 6,
+            },
           }}
         >
           <Table>
@@ -280,9 +284,11 @@ export default function ProjectList() {
                   sx={{
                     "&:hover": {
                       bgcolor: "action.hover",
+                      transform: "scale(1.002)",
                     },
                     bgcolor:
                       index % 2 === 0 ? "background.paper" : "action.hover",
+                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                 >
                   {/* Project ID */}
@@ -303,7 +309,9 @@ export default function ProjectList() {
                         alignItems: "center",
                         gap: 1,
                         cursor: "pointer",
+                        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                         "&:hover": {
+                          transform: "translateX(4px)",
                           "& .MuiTypography-root": {
                             color: "primary.main",
                             textDecoration: "underline",
@@ -388,9 +396,11 @@ export default function ProjectList() {
                           color="info"
                           onClick={() => handleViewOpen(project)}
                           sx={{
+                            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                             "&:hover": {
                               bgcolor: "info.light",
                               color: "white",
+                              transform: "scale(1.1)",
                             },
                           }}
                         >
@@ -406,9 +416,12 @@ export default function ProjectList() {
                             color="warning"
                             onClick={() => handleEditOpen(project)}
                             sx={{
+                              transition:
+                                "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                               "&:hover": {
                                 bgcolor: "warning.light",
                                 color: "white",
+                                transform: "scale(1.1)",
                               },
                             }}
                           >
@@ -425,9 +438,12 @@ export default function ProjectList() {
                             color="error"
                             onClick={() => handleDeleteOpen(project)}
                             sx={{
+                              transition:
+                                "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                               "&:hover": {
                                 bgcolor: "error.light",
                                 color: "white",
+                                transform: "scale(1.1)",
                               },
                             }}
                           >
@@ -485,4 +501,3 @@ export default function ProjectList() {
     </Container>
   );
 }
-  
