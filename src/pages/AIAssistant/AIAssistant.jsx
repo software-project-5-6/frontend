@@ -26,7 +26,11 @@ import { useAuth } from "../../context/AuthContext";
 import { getAllProjects } from "../../api/projectApi";
 import { askProject } from "../../api/chatApi";
 
-export const AIAssistant = () => {
+export const AIAssistant = ({
+  setCurrentProjectWithAssistant,
+  currentProjectWithAssistant,
+  currentConversationId,
+}) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
@@ -42,7 +46,11 @@ export const AIAssistant = () => {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState({ question: "" });
+  const [query, setQuery] = useState({
+    projectId: "",
+    conversationId: "",
+    question: "",
+  });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -103,13 +111,18 @@ export const AIAssistant = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setQuery({ question: "" });
+
+    const updatedQuery = {
+      ...query,
+      projectId: selectedProject,
+      conversationId: currentConversationId,
+      question: questionText,
+    };
+    setQuery(updatedQuery);
     setIsSending(true);
 
     try {
-      const aiText = await askProject(selectedProject, {
-        question: questionText,
-      });
+      const aiText = await askProject(updatedQuery);
 
       const aiResponse = {
         id: Date.now() + 1,
@@ -205,7 +218,15 @@ export const AIAssistant = () => {
               <Select
                 value={selectedProject}
                 label="Current Project"
-                onChange={(e) => setSelectedProject(e.target.value)}
+                onChange={(e) => {
+                  setSelectedProject(e.target.value);
+                  const project = projects.find((p) => p.id == e.target.value);
+                  setCurrentProjectWithAssistant({
+                    ...(currentProjectWithAssistant || {}),
+                    projectId: project?.id ?? "",
+                    projectName: project?.projectName ?? "",
+                  });
+                }}
               >
                 {projects.map((project) => (
                   <MenuItem key={project.id} value={project.id}>
@@ -372,7 +393,9 @@ export const AIAssistant = () => {
                 maxRows={4}
                 placeholder="Type your message here..."
                 value={query.question}
-                onChange={(e) => setQuery({ question: e.target.value })}
+                onChange={(e) =>
+                  setQuery((prev) => ({ ...prev, question: e.target.value }))
+                }
                 onKeyPress={handleKeyPress}
                 disabled={isSending}
                 variant="outlined"
@@ -414,7 +437,10 @@ export const AIAssistant = () => {
                     key={index}
                     label={prompt}
                     onClick={() => {
-                      setQuery({ question: prompt });
+                      setQuery((prev) => ({
+                        ...prev,
+                        question: prompt,
+                      }));
                       inputRef.current?.focus();
                     }}
                     sx={{

@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
-export default function MainLayout({ children }) {
+export default function MainLayout({ children, sidebarProps = {} }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
@@ -18,7 +18,11 @@ export default function MainLayout({ children }) {
       <Navbar onMenuClick={handleDrawerToggle} />
 
       {/* Sidebar */}
-      <Sidebar mobileOpen={mobileOpen} onMobileClose={handleDrawerToggle} />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onMobileClose={handleDrawerToggle}
+        {...sidebarProps}
+      />
 
       {/* Main Content Area */}
       <Box

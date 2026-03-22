@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../auth/Login.jsx";
 import Signup from "../auth/Signup.jsx";
@@ -14,8 +14,14 @@ import RequireRole from "../auth/RequireRole.jsx";
 import MainLayout from "../layouts/MainLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import { ROLES } from "../utils/roleUtils.js";
+import { getAllProjects } from "../api/projectApi.js";
 
 export default function AppRouter() {
+  const [currentProjectWithAssistant, setCurrentProjectWithAssistant] =
+    useState({ projectId: "", projectName: "" });
+
+  const [currentConversationId, setCurrentConversationId] = useState("");
+
   return (
     <Routes>
       {/* Public routes - Wrapped with AuthLayout */}
@@ -67,14 +73,25 @@ export default function AppRouter() {
         path="/"
         element={
           <RequireAuth>
-            <MainLayout>
-              <AIAssistant />
+            <MainLayout
+              sidebarProps={{
+                currentProjectWithAssistant,
+                currentConversationId,
+                setCurrentConversationId,
+              }}
+            >
+              <AIAssistant
+                setCurrentProjectWithAssistant={setCurrentProjectWithAssistant}
+                currentProjectWithAssistance={currentProjectWithAssistant}
+                currentConversationId={currentConversationId}
+              />
             </MainLayout>
           </RequireAuth>
         }
       />
 
       {/* Projects routes */}
+
       <Route
         path="/projects"
         element={
