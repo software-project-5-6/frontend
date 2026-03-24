@@ -57,7 +57,6 @@ export default function Sidebar({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [conversations, setConversations] = useState([]);
-  // const [currentConversation,setCurrentConversation]=useState("");
 
   useEffect(() => {
     handleGettingProjectConversations();
@@ -102,9 +101,11 @@ export default function Sidebar({
       ...prev,
       {
         conversationId: response.id,
-        title: response.title ?? chatTitle,
+        title: chatTitle,
       },
     ]);
+    setCurrentConversationId(response.id);
+
     setIsCreating(false);
     console.log(conversations);
     setOpenNewChatDialog(false);
@@ -188,6 +189,7 @@ export default function Sidebar({
                       handleNavigation(item.path);
                     } else {
                       handleNavigation(item.path);
+                      setCurrentConversationId("");
                     }
                   }}
                   sx={{
@@ -312,6 +314,7 @@ export default function Sidebar({
                         <ListItemButton
                           onClick={() => {
                             setCurrentConversationId(c.conversationId);
+                            navigate("/");
                           }}
                           sx={{
                             pl: 4,

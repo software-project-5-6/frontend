@@ -81,8 +81,9 @@ export default function AppRouter() {
               }}
             >
               <AIAssistant
+                key={currentConversationId}
                 setCurrentProjectWithAssistant={setCurrentProjectWithAssistant}
-                currentProjectWithAssistance={currentProjectWithAssistant}
+                currentProjectWithAssistant={currentProjectWithAssistant}
                 currentConversationId={currentConversationId}
               />
             </MainLayout>
