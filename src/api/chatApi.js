@@ -33,22 +33,6 @@ export const askProject = async (askObject) => {
   
  } 
 
- /**
-  * this will store messages of userQuestions and assistance answers
-  * @param {object} chatStoreObject //{conversationId,message,role,userId}
-  * @returns 
-  */
- export const storeChat = async (chatStoreObject)=>{
-  try{
-    const response =await api.post(`/chat/store`,chatStoreObject);
-    return response.data;
-
-  }catch(error){
-     console.error("Error with storing chat:", error);
-    throw error;
-  }
- }
-
  export const getAllConversationsForProject = async (projectId)=>{
   try{
     const response = await api.get(`/chat/conversations/${projectId}`);
@@ -70,7 +54,17 @@ export const askProject = async (askObject) => {
      console.error("Error with getting messages for conversation:", error);
     throw error;
 
-  }
+  }}
+  
+   export const deleteAllMessagesForConversation = async (conversationId)=>{
+    try{
+      const response = await api.delete(`/chat/conversation/${conversationId}`);
+      return response.data;
 
+  }catch(error){
+     console.error("Error with deleting messages for conversation:", error);
+    throw error;
+
+  }
 
  }

@@ -1,5 +1,6 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { Collapse } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
 import {
   CircularProgress,
@@ -21,6 +22,7 @@ import {
   Button,
   Alert,
   Typography,
+  IconButton,
 } from "@mui/material";
 import {
   Add,
@@ -36,6 +38,7 @@ import { ShowForAdmin } from "./RoleBasedComponents";
 import {
   createConversation,
   getAllConversationsForProject,
+  deleteAllMessagesForConversation,
 } from "../api/chatApi";
 
 const drawerWidth = 240;
@@ -57,6 +60,9 @@ export default function Sidebar({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [conversations, setConversations] = useState([]);
+
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
 
   useEffect(() => {
     handleGettingProjectConversations();
@@ -109,10 +115,23 @@ export default function Sidebar({
     setIsCreating(false);
     setOpenNewChatDialog(false);
     console.log("response:", response);
-    // console.log("passing conversation id from side bar:", response);
-    // navigate("/", {
-    //   state: { conversationId: response },
-    // });
+  };
+
+  const handleDeleteConversation = async () => {
+    const response = await deleteAllMessagesForConversation(
+      selectedConversation.conversationId,
+    );
+    console.log("number of messages deleted:", response);
+
+    setConversations((prev) =>
+      prev.filter(
+        (c) => c.conversationId !== selectedConversation.conversationId,
+      ),
+    );
+    setOpenDeleteDialog(false);
+    setCurrentConversationId(
+      conversations[conversations.length - 1].conversationId,
+    );
   };
 
   // Menu items visible to all authenticated users
@@ -314,7 +333,15 @@ export default function Sidebar({
                       Recent
                     </Typography>
                     {conversations?.map((c) => (
-                      <ListItem disablePadding sx={{ mb: 0.5 }}>
+                      <ListItem
+                        disablePadding
+                        sx={{
+                          mb: 0.5,
+                          "&:hover .delete-btn": {
+                            opacity: 1,
+                          },
+                        }}
+                      >
                         <ListItemButton
                           onClick={() => {
                             setCurrentConversationId(c.conversationId);
@@ -341,9 +368,66 @@ export default function Sidebar({
                             primary={c.title}
                             primaryTypographyProps={{ fontSize: "0.85rem" }}
                           />
+                          <IconButton
+                            className="delete-btn"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedConversation(c);
+                              setOpenDeleteDialog(true);
+                            }}
+                            sx={{
+                              opacity: 0, // hidden by default
+                              transition: "0.2s",
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </ListItemButton>
                       </ListItem>
                     ))}
+                    <Dialog
+                      open={openDeleteDialog}
+                      onClose={() => setOpenDeleteDialog(false)}
+                    >
+                      <DialogTitle>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                          Delete Conversation
+                        </Box>
+                      </DialogTitle>
+                      <DialogContent>
+                        <Typography>
+                          Are you sure you want to delete{" "}
+                          <Typography
+                            component="span"
+                            sx={{
+                              fontWeight: 400,
+                              color: "error.main",
+                            }}
+                          >
+                            "{selectedConversation?.title}"
+                          </Typography>
+                          ?
+                        </Typography>
+                      </DialogContent>
+
+                      <DialogActions>
+                        <Button onClick={() => setOpenDeleteDialog(false)}>
+                          Cancel
+                        </Button>
+
+                        <Button
+                          color="error"
+                          variant="contained"
+                          onClick={handleDeleteConversation}
+                        >
+                          Delete
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
                   </List>
                 </Collapse>
               )}

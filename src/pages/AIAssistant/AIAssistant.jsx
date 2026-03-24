@@ -60,15 +60,6 @@ export const AIAssistant = ({
 
   const location = useLocation();
 
-  // useEffect(() => {
-  //   if (location.state?.conversationId) {
-  //     const newId = location.state.conversationId;
-
-  //     console.log("passed conversation id to the ai assistant", newId);
-
-  //   }
-  // }, [location.state]);
-
   useEffect(() => {
     if (currentConversationId) {
       setQuery((prev) => ({
@@ -349,11 +340,7 @@ export const AIAssistant = ({
                       flexShrink: 0,
                     }}
                   >
-                    {message.role === "assist" ? (
-                      <AIIcon />
-                    ) : (
-                      <AccountCircleIcon />
-                    )}
+                    {message.role === "assist" ? <AIIcon /> : ""}
                   </Avatar>
 
                   <Paper
