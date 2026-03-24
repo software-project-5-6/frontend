@@ -85,6 +85,7 @@ export default function AppRouter() {
                 setCurrentProjectWithAssistant={setCurrentProjectWithAssistant}
                 currentProjectWithAssistant={currentProjectWithAssistant}
                 currentConversationId={currentConversationId}
+                setCurrentConversationId={setCurrentConversationId}
               />
             </MainLayout>
           </RequireAuth>

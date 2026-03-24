@@ -100,15 +100,19 @@ export default function Sidebar({
     setConversations((prev) => [
       ...prev,
       {
-        conversationId: response.id,
+        conversationId: response,
         title: chatTitle,
       },
     ]);
-    setCurrentConversationId(response.id);
+    setCurrentConversationId(response);
 
     setIsCreating(false);
-    console.log(conversations);
     setOpenNewChatDialog(false);
+    console.log("response:", response);
+    // console.log("passing conversation id from side bar:", response);
+    // navigate("/", {
+    //   state: { conversationId: response },
+    // });
   };
 
   // Menu items visible to all authenticated users

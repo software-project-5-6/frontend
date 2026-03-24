@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Box,
   Container,
@@ -31,6 +32,7 @@ export const AIAssistant = ({
   setCurrentProjectWithAssistant,
   currentProjectWithAssistant,
   currentConversationId,
+  setCurrentConversationId,
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
@@ -56,9 +58,35 @@ export const AIAssistant = ({
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  const location = useLocation();
+
+  // useEffect(() => {
+  //   if (location.state?.conversationId) {
+  //     const newId = location.state.conversationId;
+
+  //     console.log("passed conversation id to the ai assistant", newId);
+
+  //   }
+  // }, [location.state]);
+
   useEffect(() => {
-    handleGettingConversationMessages(currentConversationId);
+    if (currentConversationId) {
+      setQuery((prev) => ({
+        ...prev,
+        conversationId: currentConversationId,
+      }));
+      handleGettingConversationMessages(currentConversationId);
+    }
   }, [currentConversationId]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      setQuery((prev) => ({
+        ...prev,
+        projectId: selectedProject,
+      }));
+    }
+  }, [selectedProject]);
 
   const handleGettingConversationMessages = async (id) => {
     if (id) {
@@ -135,12 +163,11 @@ export const AIAssistant = ({
     setMessages((prev) => [...prev, userMessage]);
 
     const updatedQuery = {
-      ...query,
-      projectId: currentProjectWithAssistant.projectId,
+      projectId: selectedProject,
       conversationId: currentConversationId,
       question: questionText,
     };
-    setQuery(updatedQuery);
+
     setIsSending(true);
     console.log("conversationId at send:", currentConversationId);
     try {
@@ -153,6 +180,10 @@ export const AIAssistant = ({
       };
 
       setMessages((prev) => [...prev, aiResponse]);
+      setQuery((prev) => ({
+        ...prev,
+        question: "",
+      }));
     } catch (err) {
       setError("Failed to get AI response");
     } finally {
@@ -171,9 +202,9 @@ export const AIAssistant = ({
     setMessages([
       {
         id: 1,
-        type: "ai",
-        text: "Hello! I'm your AI assistant. How can I help you with your projects today?",
-        timestamp: new Date(),
+        role: "assist",
+        content:
+          "Hello! I'm your AI assistant. How can I help you with your projects today?",
       },
     ]);
   };
