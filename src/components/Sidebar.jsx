@@ -3,7 +3,6 @@ import { Collapse } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
 import {
-  CircularProgress,
   Drawer,
   List,
   ListItem,
@@ -11,7 +10,6 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  TextField,
   Box,
   Divider,
   Chip,
@@ -20,7 +18,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Alert,
   Typography,
   IconButton,
 } from "@mui/material";
@@ -36,7 +33,6 @@ import { gradients } from "../styles/theme";
 import { useAuth } from "../context/AuthContext";
 import { ShowForAdmin } from "./RoleBasedComponents";
 import {
-  createConversation,
   getAllConversationsForProject,
   deleteAllMessagesForConversation,
 } from "../api/chatApi";
@@ -49,89 +45,57 @@ export default function Sidebar({
   currentProjectWithAssistant,
   currentConversationId,
   setCurrentConversationId,
+  conversationRefreshKey,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { userRole, isAdmin } = useAuth();
 
   const [expanded, setExpanded] = useState(false);
-  const [openNewChatDialog, setOpenNewChatDialog] = useState(false);
-  const [chatTitle, setChatTitle] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState("");
   const [conversations, setConversations] = useState([]);
 
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
 
   useEffect(() => {
-    handleGettingProjectConversations();
-  }, [currentProjectWithAssistant]);
+    if (currentProjectWithAssistant?.projectId) {
+      handleGettingProjectConversations();
+    }
+  }, [currentProjectWithAssistant, conversationRefreshKey]);
 
   const handleGettingProjectConversations = async () => {
+    if (!currentProjectWithAssistant?.projectId) {
+      return;
+    }
     const response = await getAllConversationsForProject(
       currentProjectWithAssistant.projectId,
     );
-    setConversations(response.conversations);
-    console.log(response);
+    setConversations([...response.conversations].reverse());
   };
 
-  const handleOpenNewChat = () => {
-    setOpenNewChatDialog(true);
-  };
-
-  const handleCloseNewChat = () => {
-    setOpenNewChatDialog(false);
-    setError("");
-    setChatTitle("");
-  };
-
-  const handleCreateChat = async () => {
-    if (!chatTitle.trim()) {
-      setError("Please enter a chat title");
-      return;
+  useEffect(() => {
+    if (currentConversationId && currentProjectWithAssistant?.projectId) {
+      const exists = conversations.some(
+        (c) => c.conversationId === currentConversationId,
+      );
+      if (!exists) {
+        handleGettingProjectConversations();
+      }
     }
-    if (!currentProjectWithAssistant?.projectId) {
-      setError("Please select a project first");
-      return;
-    }
-    setError("");
-    const newConversationObject = {
-      projectId: currentProjectWithAssistant.projectId,
-      title: chatTitle,
-    };
-    console.log(newConversationObject);
-    setIsCreating(true);
-    const response = await createConversation(newConversationObject);
-    setConversations((prev) => [
-      ...prev,
-      {
-        conversationId: response,
-        title: chatTitle,
-      },
-    ]);
-    setCurrentConversationId(response);
-
-    setIsCreating(false);
-    setOpenNewChatDialog(false);
-    console.log("response:", response);
-  };
+  }, [currentConversationId]);
 
   const handleDeleteConversation = async () => {
-    const response = await deleteAllMessagesForConversation(
-      selectedConversation.conversationId,
-    );
-    console.log("number of messages deleted:", response);
+    await deleteAllMessagesForConversation(selectedConversation.conversationId);
 
     setConversations((prev) =>
       prev.filter(
         (c) => c.conversationId !== selectedConversation.conversationId,
       ),
     );
+    if (currentConversationId === selectedConversation.conversationId) {
+      setCurrentConversationId("");
+    }
     setOpenDeleteDialog(false);
-    setCurrentConversationId(
-      conversations[conversations.length - 1].conversationId,
-    );
   };
 
   // Menu items visible to all authenticated users
@@ -259,7 +223,10 @@ export default function Sidebar({
                   <List component="div" disablePadding>
                     <ListItem disablePadding sx={{ mb: 0.5 }}>
                       <ListItemButton
-                        onClick={handleOpenNewChat}
+                        onClick={() => {
+                          setCurrentConversationId("");
+                          navigate("/");
+                        }}
                         sx={{
                           pl: 4,
                           borderRadius: 2,
@@ -276,64 +243,13 @@ export default function Sidebar({
                           primaryTypographyProps={{ fontSize: "0.85rem" }}
                         />
                       </ListItemButton>
-                      <Dialog
-                        open={openNewChatDialog}
-                        onClose={handleCloseNewChat}
-                      >
-                        <DialogTitle>Start New Chat</DialogTitle>
-                        <DialogContent>
-                          <p>Create a new conversation</p>
-                          {error && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                              {error}
-                            </Alert>
-                          )}
-                          <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Chat Title"
-                            fullWidth
-                            variant="outlined"
-                            value={chatTitle}
-                            onChange={(e) => setChatTitle(e.target.value)}
-                            sx={{ mb: 2 }}
-                          />
-                          <TextField
-                            margin="dense"
-                            label="Selected Project"
-                            fullWidth
-                            variant="outlined"
-                            value={
-                              currentProjectWithAssistant?.projectName ||
-                              "No project selected"
-                            }
-                            InputProps={{
-                              readOnly: true,
-                            }}
-                            sx={{ mb: 2 }}
-                          />
-                        </DialogContent>
-                        <DialogActions>
-                          <Button onClick={handleCloseNewChat}>Cancel</Button>
-                          {isCreating ? (
-                            <CircularProgress size={24} sx={{ mx: 2 }} />
-                          ) : (
-                            <Button
-                              onClick={handleCreateChat}
-                              variant="contained"
-                              color="primary"
-                            >
-                              Create
-                            </Button>
-                          )}
-                        </DialogActions>
-                      </Dialog>
                     </ListItem>
                     <Typography variant="caption" sx={{ mb: 1, mt: 4, ml: 2 }}>
                       Recent
                     </Typography>
                     {conversations?.map((c) => (
                       <ListItem
+                        key={c.conversationId}
                         disablePadding
                         sx={{
                           mb: 0.5,

@@ -14,13 +14,16 @@ import RequireRole from "../auth/RequireRole.jsx";
 import MainLayout from "../layouts/MainLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import { ROLES } from "../utils/roleUtils.js";
-import { getAllProjects } from "../api/projectApi.js";
 
 export default function AppRouter() {
   const [currentProjectWithAssistant, setCurrentProjectWithAssistant] =
     useState({ projectId: "", projectName: "" });
 
   const [currentConversationId, setCurrentConversationId] = useState("");
+  const [conversationRefreshKey, setConversationRefreshKey] = useState(0);
+
+  const triggerConversationRefresh = () =>
+    setConversationRefreshKey((prev) => prev + 1);
 
   return (
     <Routes>
@@ -78,14 +81,15 @@ export default function AppRouter() {
                 currentProjectWithAssistant,
                 currentConversationId,
                 setCurrentConversationId,
+                conversationRefreshKey,
               }}
             >
               <AIAssistant
-                key={currentConversationId}
                 setCurrentProjectWithAssistant={setCurrentProjectWithAssistant}
                 currentProjectWithAssistant={currentProjectWithAssistant}
                 currentConversationId={currentConversationId}
                 setCurrentConversationId={setCurrentConversationId}
+                onConversationTitleUpdated={triggerConversationRefresh}
               />
             </MainLayout>
           </RequireAuth>

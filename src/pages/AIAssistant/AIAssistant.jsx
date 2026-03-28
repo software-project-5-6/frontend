@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import {
   Box,
-  Container,
   Typography,
   TextField,
   IconButton,
@@ -22,17 +20,23 @@ import {
   AutoAwesome as AIIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { gradients } from "../../styles/theme";
 import { useAuth } from "../../context/AuthContext";
 import { getAllProjects } from "../../api/projectApi";
-import { askProject, getAllMessagesForConversation } from "../../api/chatApi";
+import {
+  askProject,
+  createConversation,
+  getAllMessagesForConversation,
+  generateConversationTitle,
+  renameConversation,
+} from "../../api/chatApi";
 
 export const AIAssistant = ({
   setCurrentProjectWithAssistant,
   currentProjectWithAssistant,
   currentConversationId,
   setCurrentConversationId,
+  onConversationTitleUpdated,
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
@@ -50,39 +54,49 @@ export const AIAssistant = ({
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState({
-    projectId: "",
-    conversationId: "",
     question: "",
   });
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-
-  const location = useLocation();
+  const sendingRef = useRef(false);
+  const justCreatedConversationIdRef = useRef(null);
 
   useEffect(() => {
     if (currentConversationId) {
-      setQuery((prev) => ({
-        ...prev,
-        conversationId: currentConversationId,
-      }));
+      if (
+        justCreatedConversationIdRef.current === currentConversationId &&
+        sendingRef.current
+      ) {
+        return;
+      }
       handleGettingConversationMessages(currentConversationId);
+    } else {
+      setMessages([
+        {
+          id: 1,
+          role: "assist",
+          content:
+            "Hello! I'm your AI assistant. How can I help you with your projects today?",
+        },
+      ]);
     }
   }, [currentConversationId]);
 
   useEffect(() => {
     if (selectedProject) {
-      setQuery((prev) => ({
-        ...prev,
-        projectId: selectedProject,
+      const project = projects.find((p) => p.id == selectedProject);
+      setCurrentProjectWithAssistant((prev) => ({
+        ...(prev || {}),
+        projectId: project?.id ?? "",
+        projectName: project?.projectName ?? "",
       }));
     }
-  }, [selectedProject]);
+  }, [selectedProject, projects, setCurrentProjectWithAssistant]);
 
   const handleGettingConversationMessages = async (id) => {
     if (id) {
       const response = await getAllMessagesForConversation(id);
-      console.log(response.messages);
       setMessages(response.messages);
     } else {
       setMessages([
@@ -107,7 +121,6 @@ export const AIAssistant = ({
       setError(null);
       const data = await getAllProjects();
       setProjects(data);
-      if (data.length > 0) setSelectedProject(data[0].id); // default selection
     } catch (err) {
       console.error("Error fetching projects:", err);
       setError("Failed to load projects. Please try again later.");
@@ -117,6 +130,19 @@ export const AIAssistant = ({
   };
 
   useEffect(() => {
+    if (!projects.length || selectedProject) {
+      return;
+    }
+    const preferredProjectId = currentProjectWithAssistant?.projectId;
+    const hasPreferred = projects.some((p) => p.id == preferredProjectId);
+    if (preferredProjectId && hasPreferred) {
+      setSelectedProject(preferredProjectId);
+      return;
+    }
+    setSelectedProject(projects[0].id);
+  }, [projects, selectedProject, currentProjectWithAssistant]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
@@ -124,24 +150,19 @@ export const AIAssistant = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // const getDisplayName = () => {
-  //   if (user?.username) return user.username;
-  //   if (user?.userId) return user.userId.split("-")[0];
-  //   return "User";
-  // };
-
-  // const getInitials = () => {
-  //   const displayName = getDisplayName();
-  //   if (!displayName || displayName === "User") return "U";
-  //   const names = displayName.split(" ");
-  //   if (names.length >= 2) {
-  //     return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
-  //   }
-  //   return displayName.charAt(0).toUpperCase();
-  // };
-
   const handleSendMessage = async () => {
-    if (!query.question.trim() || isSending) return;
+    if (!query.question.trim() || isSending || sendingRef.current) return;
+    if (loading) {
+      setError("Projects are still loading. Please try again in a moment.");
+      return;
+    }
+    if (!selectedProject) {
+      setError("Please select a project first.");
+      return;
+    }
+
+    sendingRef.current = true;
+    setIsSending(true);
 
     const questionText = query.question; // capture BEFORE clearing
 
@@ -153,14 +174,25 @@ export const AIAssistant = ({
 
     setMessages((prev) => [...prev, userMessage]);
 
+    let conversationId = currentConversationId;
+    if (!conversationId) {
+      const title =
+        questionText.length > 60
+          ? questionText.slice(0, 60).trim() + "..."
+          : questionText.trim();
+      conversationId = await createConversation({
+        projectId: selectedProject,
+        title,
+      });
+      justCreatedConversationIdRef.current = conversationId;
+      setCurrentConversationId(conversationId);
+    }
     const updatedQuery = {
       projectId: selectedProject,
-      conversationId: currentConversationId,
+      conversationId,
       question: questionText,
     };
 
-    setIsSending(true);
-    console.log("conversationId at send:", currentConversationId);
     try {
       const aiText = await askProject(updatedQuery);
 
@@ -171,33 +203,39 @@ export const AIAssistant = ({
       };
 
       setMessages((prev) => [...prev, aiResponse]);
-      setQuery((prev) => ({
-        ...prev,
-        question: "",
-      }));
+      setQuery((prev) => ({ ...prev, question: "" }));
+
+      // Background: generate an intelligent title from the first message
+      if (justCreatedConversationIdRef.current === conversationId) {
+        generateConversationTitle(questionText)
+          .then((title) => renameConversation(conversationId, title))
+          .then(() => onConversationTitleUpdated?.())
+          .catch(() => {}); // non-critical, fail silently
+      }
+
+      await handleGettingConversationMessages(conversationId);
     } catch (err) {
       setError("Failed to get AI response");
     } finally {
       setIsSending(false);
+      sendingRef.current = false;
+      justCreatedConversationIdRef.current = null;
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.repeat) {
       e.preventDefault();
+      if (loading) {
+        setError("Projects are still loading. Please try again in a moment.");
+        return;
+      }
       handleSendMessage();
     }
   };
 
   const handleNewChat = () => {
-    setMessages([
-      {
-        id: 1,
-        role: "assist",
-        content:
-          "Hello! I'm your AI assistant. How can I help you with your projects today?",
-      },
-    ]);
+    setCurrentConversationId("");
   };
 
   return (
@@ -438,9 +476,8 @@ export const AIAssistant = ({
                 value={query.question}
                 onChange={(e) => {
                   setQuery((prev) => ({ ...prev, question: e.target.value }));
-                  // setMessages((prev)=>[...prev,{id:Date.now(),role:"user",content:e.target.value}])
                 }}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 disabled={isSending}
                 variant="outlined"
                 sx={{
@@ -453,7 +490,10 @@ export const AIAssistant = ({
               <IconButton
                 onClick={handleSendMessage}
                 disabled={
-                  !query.question.trim() || isSending || !currentConversationId
+                  !query.question.trim() ||
+                  isSending ||
+                  loading ||
+                  !selectedProject
                 }
                 sx={{
                   background: gradients.primary,
