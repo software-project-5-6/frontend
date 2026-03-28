@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Box,
   Container,
@@ -21,19 +22,25 @@ import {
   AutoAwesome as AIIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { gradients } from "../../styles/theme";
 import { useAuth } from "../../context/AuthContext";
 import { getAllProjects } from "../../api/projectApi";
-import { askProject } from "../../api/chatApi";
+import { askProject, getAllMessagesForConversation } from "../../api/chatApi";
 
-export const AIAssistant = () => {
+export const AIAssistant = ({
+  setCurrentProjectWithAssistant,
+  currentProjectWithAssistant,
+  currentConversationId,
+  setCurrentConversationId,
+}) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
-      type: "ai",
-      text: "Hello! I'm your AI assistant. How can I help you with your projects today?",
-      timestamp: new Date(),
+      role: "assist",
+      content:
+        "Hello! I'm your AI assistant. How can I help you with your projects today?",
     },
   ]);
 
@@ -42,9 +49,52 @@ export const AIAssistant = () => {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState({ question: "" });
+  const [query, setQuery] = useState({
+    projectId: "",
+    conversationId: "",
+    question: "",
+  });
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (currentConversationId) {
+      setQuery((prev) => ({
+        ...prev,
+        conversationId: currentConversationId,
+      }));
+      handleGettingConversationMessages(currentConversationId);
+    }
+  }, [currentConversationId]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      setQuery((prev) => ({
+        ...prev,
+        projectId: selectedProject,
+      }));
+    }
+  }, [selectedProject]);
+
+  const handleGettingConversationMessages = async (id) => {
+    if (id) {
+      const response = await getAllMessagesForConversation(id);
+      console.log(response.messages);
+      setMessages(response.messages);
+    } else {
+      setMessages([
+        {
+          id: 1,
+          role: "assist",
+          content:
+            "Hello! I'm your AI assistant. How can I help you with your projects today?",
+        },
+      ]);
+    }
+  };
 
   // Fetch projects
   useEffect(() => {
@@ -57,7 +107,7 @@ export const AIAssistant = () => {
       setError(null);
       const data = await getAllProjects();
       setProjects(data);
-      if (data.length > 0) setSelectedProject(data[0].name); // default selection
+      if (data.length > 0) setSelectedProject(data[0].id); // default selection
     } catch (err) {
       console.error("Error fetching projects:", err);
       setError("Failed to load projects. Please try again later.");
@@ -74,21 +124,21 @@ export const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const getDisplayName = () => {
-    if (user?.username) return user.username;
-    if (user?.userId) return user.userId.split("-")[0];
-    return "User";
-  };
+  // const getDisplayName = () => {
+  //   if (user?.username) return user.username;
+  //   if (user?.userId) return user.userId.split("-")[0];
+  //   return "User";
+  // };
 
-  const getInitials = () => {
-    const displayName = getDisplayName();
-    if (!displayName || displayName === "User") return "U";
-    const names = displayName.split(" ");
-    if (names.length >= 2) {
-      return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
-    }
-    return displayName.charAt(0).toUpperCase();
-  };
+  // const getInitials = () => {
+  //   const displayName = getDisplayName();
+  //   if (!displayName || displayName === "User") return "U";
+  //   const names = displayName.split(" ");
+  //   if (names.length >= 2) {
+  //     return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
+  //   }
+  //   return displayName.charAt(0).toUpperCase();
+  // };
 
   const handleSendMessage = async () => {
     if (!query.question.trim() || isSending) return;
@@ -97,28 +147,34 @@ export const AIAssistant = () => {
 
     const userMessage = {
       id: Date.now(),
-      type: "user",
-      text: questionText,
-      timestamp: new Date(),
+      role: "user",
+      content: questionText,
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setQuery({ question: "" });
-    setIsSending(true);
 
+    const updatedQuery = {
+      projectId: selectedProject,
+      conversationId: currentConversationId,
+      question: questionText,
+    };
+
+    setIsSending(true);
+    console.log("conversationId at send:", currentConversationId);
     try {
-      const aiText = await askProject(selectedProject, {
-        question: questionText,
-      });
+      const aiText = await askProject(updatedQuery);
 
       const aiResponse = {
         id: Date.now() + 1,
-        type: "ai",
-        text: aiText.answer,
-        timestamp: new Date(),
+        role: "assist",
+        content: aiText.answer,
       };
 
       setMessages((prev) => [...prev, aiResponse]);
+      setQuery((prev) => ({
+        ...prev,
+        question: "",
+      }));
     } catch (err) {
       setError("Failed to get AI response");
     } finally {
@@ -137,9 +193,9 @@ export const AIAssistant = () => {
     setMessages([
       {
         id: 1,
-        type: "ai",
-        text: "Hello! I'm your AI assistant. How can I help you with your projects today?",
-        timestamp: new Date(),
+        role: "assist",
+        content:
+          "Hello! I'm your AI assistant. How can I help you with your projects today?",
       },
     ]);
   };
@@ -205,7 +261,23 @@ export const AIAssistant = () => {
               <Select
                 value={selectedProject}
                 label="Current Project"
-                onChange={(e) => setSelectedProject(e.target.value)}
+                onChange={(e) => {
+                  setSelectedProject(e.target.value);
+                  const project = projects.find((p) => p.id == e.target.value);
+                  setCurrentProjectWithAssistant({
+                    ...(currentProjectWithAssistant || {}),
+                    projectId: project?.id ?? "",
+                    projectName: project?.projectName ?? "",
+                  });
+                  setMessages([
+                    {
+                      id: 1,
+                      role: "assist",
+                      content:
+                        "Hello! I'm your AI assistant. How can I help you with your projects today?",
+                    },
+                  ]);
+                }}
               >
                 {projects.map((project) => (
                   <MenuItem key={project.id} value={project.id}>
@@ -254,13 +326,13 @@ export const AIAssistant = () => {
                     gap: 2,
                     alignItems: "flex-start",
                     flexDirection:
-                      message.type === "user" ? "row-reverse" : "row",
+                      message.role === "user" ? "row-reverse" : "row",
                   }}
                 >
                   <Avatar
                     sx={{
                       background:
-                        message.type === "ai"
+                        message.role === "assist"
                           ? gradients.primary
                           : gradients.purple,
                       width: 36,
@@ -268,7 +340,7 @@ export const AIAssistant = () => {
                       flexShrink: 0,
                     }}
                   >
-                    {message.type === "ai" ? <AIIcon /> : getInitials()}
+                    {message.role === "assist" ? <AIIcon /> : ""}
                   </Avatar>
 
                   <Paper
@@ -277,29 +349,21 @@ export const AIAssistant = () => {
                       p: 2,
                       maxWidth: "70%",
                       background:
-                        message.type === "ai"
+                        message.role === "assist"
                           ? (theme) => theme.palette.grey[100]
                           : gradients.primary,
-                      color: message.type === "ai" ? "text.primary" : "white",
+                      color:
+                        message.role === "assist" ? "text.primary" : "white",
                       borderRadius: 2,
-                      borderTopLeftRadius: message.type === "ai" ? 0 : 2,
-                      borderTopRightRadius: message.type === "user" ? 0 : 2,
+                      borderTopLeftRadius: message.role === "assist" ? 0 : 2,
+                      borderTopRightRadius: message.role === "assist" ? 0 : 2,
                     }}
                   >
                     <Typography
                       variant="body1"
                       sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                     >
-                      {message.text}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ display: "block", mt: 1, opacity: 0.7 }}
-                    >
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {message.content}
                     </Typography>
                   </Paper>
                 </Box>
@@ -372,7 +436,10 @@ export const AIAssistant = () => {
                 maxRows={4}
                 placeholder="Type your message here..."
                 value={query.question}
-                onChange={(e) => setQuery({ question: e.target.value })}
+                onChange={(e) => {
+                  setQuery((prev) => ({ ...prev, question: e.target.value }));
+                  // setMessages((prev)=>[...prev,{id:Date.now(),role:"user",content:e.target.value}])
+                }}
                 onKeyPress={handleKeyPress}
                 disabled={isSending}
                 variant="outlined"
@@ -385,7 +452,9 @@ export const AIAssistant = () => {
               />
               <IconButton
                 onClick={handleSendMessage}
-                disabled={!query.question.trim() || isSending}
+                disabled={
+                  !query.question.trim() || isSending || !currentConversationId
+                }
                 sx={{
                   background: gradients.primary,
                   color: "white",
@@ -414,7 +483,10 @@ export const AIAssistant = () => {
                     key={index}
                     label={prompt}
                     onClick={() => {
-                      setQuery({ question: prompt });
+                      setQuery((prev) => ({
+                        ...prev,
+                        question: prompt,
+                      }));
                       inputRef.current?.focus();
                     }}
                     sx={{
