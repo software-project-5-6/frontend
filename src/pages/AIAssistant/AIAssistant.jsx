@@ -60,6 +60,7 @@ export const AIAssistant = ({
 
   const location = useLocation();
 
+  // Keep local query state in sync
   useEffect(() => {
     if (currentConversationId) {
       setQuery((prev) => ({
@@ -78,6 +79,13 @@ export const AIAssistant = ({
       }));
     }
   }, [selectedProject]);
+
+  // NEW FIX: Keep the local dropdown synced with the global Sidebar state
+  useEffect(() => {
+    if (currentProjectWithAssistant?.projectId) {
+      setSelectedProject(currentProjectWithAssistant.projectId);
+    }
+  }, [currentProjectWithAssistant?.projectId]);
 
   const handleGettingConversationMessages = async (id) => {
     if (id) {
@@ -107,7 +115,18 @@ export const AIAssistant = ({
       setError(null);
       const data = await getAllProjects();
       setProjects(data);
-      if (data.length > 0) setSelectedProject(data[0].id); // default selection
+      
+      // NEW FIX: Only set to data[0] if there is NO project currently active from the Sidebar
+      if (currentProjectWithAssistant?.projectId) {
+        setSelectedProject(currentProjectWithAssistant.projectId);
+      } else if (data.length > 0) {
+        setSelectedProject(data[0].id);
+        setCurrentProjectWithAssistant({
+          ...(currentProjectWithAssistant || {}),
+          projectId: data[0].id,
+          projectName: data[0].projectName,
+        });
+      }
     } catch (err) {
       console.error("Error fetching projects:", err);
       setError("Failed to load projects. Please try again later.");
@@ -124,26 +143,10 @@ export const AIAssistant = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // const getDisplayName = () => {
-  //   if (user?.username) return user.username;
-  //   if (user?.userId) return user.userId.split("-")[0];
-  //   return "User";
-  // };
-
-  // const getInitials = () => {
-  //   const displayName = getDisplayName();
-  //   if (!displayName || displayName === "User") return "U";
-  //   const names = displayName.split(" ");
-  //   if (names.length >= 2) {
-  //     return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
-  //   }
-  //   return displayName.charAt(0).toUpperCase();
-  // };
-
   const handleSendMessage = async () => {
     if (!query.question.trim() || isSending) return;
 
-    const questionText = query.question; // capture BEFORE clearing
+    const questionText = query.question;
 
     const userMessage = {
       id: Date.now(),
@@ -438,7 +441,6 @@ export const AIAssistant = ({
                 value={query.question}
                 onChange={(e) => {
                   setQuery((prev) => ({ ...prev, question: e.target.value }));
-                  // setMessages((prev)=>[...prev,{id:Date.now(),role:"user",content:e.target.value}])
                 }}
                 onKeyPress={handleKeyPress}
                 disabled={isSending}
