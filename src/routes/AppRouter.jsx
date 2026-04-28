@@ -68,7 +68,7 @@ export default function AppRouter() {
         }
       />
 
-      {/* Protected routes - AI Assistant as home page */}
+     {/* Protected routes - AI Assistant as home page */}
       <Route
         path="/"
         element={
@@ -76,6 +76,7 @@ export default function AppRouter() {
             <MainLayout
               sidebarProps={{
                 currentProjectWithAssistant,
+                setCurrentProjectWithAssistant, // <--- ADD THIS LINE
                 currentConversationId,
                 setCurrentConversationId,
               }}
