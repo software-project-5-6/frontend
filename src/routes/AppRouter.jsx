@@ -15,6 +15,7 @@ import MainLayout from "../layouts/MainLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import { ROLES } from "../utils/roleUtils.js";
 import { getAllProjects } from "../api/projectApi.js";
+import ProfilePage from "./ProfilePage.jsx";
 
 export default function AppRouter() {
   const [currentProjectWithAssistant, setCurrentProjectWithAssistant] =
@@ -151,7 +152,7 @@ export default function AppRouter() {
           <RequireAuth>
             <RequireRole allowedRoles={[ROLES.ADMIN, ROLES.USER]}>
               <MainLayout>
-                <div>Profile Page</div>
+                <ProfilePage />
               </MainLayout>
             </RequireRole>
           </RequireAuth>
