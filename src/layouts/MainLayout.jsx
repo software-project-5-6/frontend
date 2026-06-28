@@ -32,7 +32,7 @@ export default function MainLayout({ children, sidebarProps = {} }) {
           p: 3,
           width: { sm: `calc(100% - 240px)` },
           minHeight: "100vh",
-          backgroundColor: "#f5f7fa",
+          backgroundColor: "background.default",
           overflow: "auto",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}

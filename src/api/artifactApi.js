@@ -93,6 +93,61 @@ export const downloadArtifact = async (projectId, artifactId, filename) => {
 };
 
 /**
+ * Initiate Google OAuth for artifact integration
+ * @param {string} userId
+ */
+export const authorizeGoogle = (userId) => {
+  const baseUrl =
+    import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
+  const currentUrl = window.location.href;
+  const separator = currentUrl.includes("?") ? "&" : "?";
+  const redirectUrl = `${currentUrl}${separator}auth_provider=google`;
+  const state = encodeURIComponent(`${redirectUrl}::${userId}`);
+  window.location.href = `${baseUrl}/oauth/google?state=${state}`;
+};
+
+/**
+ * Fetch Zoom cloud recording artifacts
+ * @param {string} projectId
+ * @param {Object} query - ZoomQueryDto object
+ * @property {boolean} [query.includeChat]       - Include meeting chat logs
+ * @property {boolean} [query.includeTranscript] - Include meeting transcripts
+ * @property {boolean} [query.includeAudio]      - Include meeting audio recordings
+ * @property {number}  [query.lastDays]          - Fetch recordings from the last N days
+ * @property {number}  [query.maxResults]        - Max meetings to return
+ * @returns {Promise<Array>}
+ */
+/**
+ * Fetch Gmail emails as artifacts
+ * @param {string} projectId
+ * @param {Object} query - GmailQueryDto object
+ * @property {string}  [query.senderEmail] - Filter by sender email (e.g. "user@example.com")
+ * @property {number}  [query.lastDays]    - Fetch emails from the last N days (e.g. 7)
+ * @property {string}  [query.label]       - Gmail label filter (e.g. "INBOX", "SENT")
+ * @property {number}  [query.maxResults]  - Max emails to return; 1–100, default 20
+ *
+ * Example:
+ * { senderEmail: "boss@company.com", lastDays: 7, label: "INBOX", maxResults: 20 }
+ *
+ * @returns {Promise<Array>}
+ */
+export const fetchGmailArtifacts = async (projectId, query = {}) => {
+  try {
+    console.log("fetchGmailArtifacts request body:", query);
+
+    const response = await api.post(
+      `/projects/${projectId}/artifacts/gmails`,
+      query,
+    );
+    console.log("fetchGmailArtifacts response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching Gmail artifacts:", error);
+    throw error;
+  }
+};
+
+/**
  * Delete artifact
  * @param {string} projectId
  * @param {number} artifactId

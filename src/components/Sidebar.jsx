@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useRef } from "react";
 import { Collapse } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
@@ -49,6 +49,9 @@ export default function Sidebar({
   currentProjectWithAssistant,
   currentConversationId,
   setCurrentConversationId,
+  assistantActivated,
+  setAssistantActivated,
+  onActivateAssistant,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,15 +67,57 @@ export default function Sidebar({
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
 
+  const cancelBtnRef = useRef(null);
+  const createBtnRef = useRef(null);
+
+  const handleDialogKeyDown = (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        createBtnRef.current?.focus();
+      }
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      cancelBtnRef.current?.focus();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      createBtnRef.current?.focus();
+    }
+  };
+
   useEffect(() => {
     handleGettingProjectConversations();
-  }, [currentProjectWithAssistant]);
+  }, [currentProjectWithAssistant?.projectId]);
+
+  useEffect(() => {
+    if (assistantActivated) {
+      setExpanded(true);
+    } else {
+      setExpanded(false);
+    }
+  }, [assistantActivated]);
 
   const handleGettingProjectConversations = async () => {
+    if (!currentProjectWithAssistant?.projectId) {
+      setConversations([]);
+      setCurrentConversationId("");
+      return;
+    }
     const response = await getAllConversationsForProject(
       currentProjectWithAssistant.projectId,
     );
-    setConversations(response.conversations);
+    const projectConversations = response.conversations || [];
+    setConversations(projectConversations);
+
+    const hasCurrentConversation = projectConversations.some(
+      (conversation) => conversation.conversationId === currentConversationId,
+    );
+
+    if (!hasCurrentConversation) {
+      setCurrentConversationId(projectConversations[0]?.conversationId || "");
+    }
     console.log(response);
   };
 
@@ -114,24 +159,32 @@ export default function Sidebar({
 
     setIsCreating(false);
     setOpenNewChatDialog(false);
+    setChatTitle("");
+    setError("");
     console.log("response:", response);
   };
 
   const handleDeleteConversation = async () => {
-    const response = await deleteAllMessagesForConversation(
-      selectedConversation.conversationId,
-    );
+    const conversationToDelete = selectedConversation?.conversationId;
+    if (!conversationToDelete) {
+      setOpenDeleteDialog(false);
+      return;
+    }
+
+    const response =
+      await deleteAllMessagesForConversation(conversationToDelete);
     console.log("number of messages deleted:", response);
 
-    setConversations((prev) =>
-      prev.filter(
-        (c) => c.conversationId !== selectedConversation.conversationId,
-      ),
+    const remainingConversations = conversations.filter(
+      (conversation) => conversation.conversationId !== conversationToDelete,
     );
+
+    setConversations(remainingConversations);
     setOpenDeleteDialog(false);
-    setCurrentConversationId(
-      conversations[conversations.length - 1].conversationId,
-    );
+
+    if (currentConversationId === conversationToDelete) {
+      setCurrentConversationId(remainingConversations[0]?.conversationId || "");
+    }
   };
 
   // Menu items visible to all authenticated users
@@ -208,6 +261,9 @@ export default function Sidebar({
                 <ListItemButton
                   onClick={() => {
                     if (isAIAssistant) {
+                      if (!assistantActivated) {
+                        onActivateAssistant?.();
+                      }
                       setExpanded(!expanded);
                       handleNavigation(item.path);
                     } else {
@@ -217,19 +273,20 @@ export default function Sidebar({
                   }}
                   sx={{
                     borderRadius: 2,
-                    py: 1.5,
-                    backgroundColor: isActive ? "primary.light" : "grey.200",
-                    color: isActive ? "#000" : "text.primary",
+                    py: 1.2,
+                    backgroundColor: isActive ? "primary.light" : "transparent",
+                    color: isActive ? "primary.main" : "text.primary",
                     "&:hover": {
-                      backgroundColor: isActive ? "primary.light" : "grey.300",
-                      opacity: isActive ? 0.9 : 1,
+                      backgroundColor: isActive
+                        ? "primary.light"
+                        : "action.hover",
                     },
                     transition: "all 0.2s",
                   }}
                 >
                   <ListItemIcon
                     sx={{
-                      color: isActive ? "#000" : "text.secondary",
+                      color: isActive ? "primary.main" : "text.secondary",
                       minWidth: 40,
                     }}
                   >
@@ -264,8 +321,9 @@ export default function Sidebar({
                           pl: 4,
                           borderRadius: 2,
                           py: 1,
-                          backgroundColor: "grey.100",
-                          "&:hover": { backgroundColor: "grey.200" },
+                          backgroundColor: "transparent",
+                          color: "text.primary",
+                          "&:hover": { backgroundColor: "action.hover" },
                         }}
                       >
                         <ListItemIcon>
@@ -279,54 +337,70 @@ export default function Sidebar({
                       <Dialog
                         open={openNewChatDialog}
                         onClose={handleCloseNewChat}
+                        onKeyDown={handleDialogKeyDown}
                       >
-                        <DialogTitle>Start New Chat</DialogTitle>
-                        <DialogContent>
-                          <p>Create a new conversation</p>
-                          {error && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                              {error}
-                            </Alert>
-                          )}
-                          <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Chat Title"
-                            fullWidth
-                            variant="outlined"
-                            value={chatTitle}
-                            onChange={(e) => setChatTitle(e.target.value)}
-                            sx={{ mb: 2 }}
-                          />
-                          <TextField
-                            margin="dense"
-                            label="Selected Project"
-                            fullWidth
-                            variant="outlined"
-                            value={
-                              currentProjectWithAssistant?.projectName ||
-                              "No project selected"
-                            }
-                            InputProps={{
-                              readOnly: true,
-                            }}
-                            sx={{ mb: 2 }}
-                          />
-                        </DialogContent>
-                        <DialogActions>
-                          <Button onClick={handleCloseNewChat}>Cancel</Button>
-                          {isCreating ? (
-                            <CircularProgress size={24} sx={{ mx: 2 }} />
-                          ) : (
+                        <Box
+                          component="form"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCreateChat();
+                          }}
+                        >
+                          <DialogTitle>Start New Chat</DialogTitle>
+                          <DialogContent>
+                            <p>Create a new conversation</p>
+                            {error && (
+                              <Alert severity="error" sx={{ mb: 2 }}>
+                                {error}
+                              </Alert>
+                            )}
+                            <TextField
+                              autoFocus
+                              margin="dense"
+                              label="Chat Title"
+                              fullWidth
+                              variant="outlined"
+                              value={chatTitle}
+                              onChange={(e) => setChatTitle(e.target.value)}
+                              sx={{ mb: 2 }}
+                            />
+                            <TextField
+                              margin="dense"
+                              label="Selected Project"
+                              fullWidth
+                              variant="outlined"
+                              value={
+                                currentProjectWithAssistant?.projectName ||
+                                "No project selected"
+                              }
+                              InputProps={{
+                                readOnly: true,
+                              }}
+                              sx={{ mb: 2 }}
+                            />
+                          </DialogContent>
+                          <DialogActions>
                             <Button
-                              onClick={handleCreateChat}
-                              variant="contained"
-                              color="primary"
+                              ref={cancelBtnRef}
+                              type="button"
+                              onClick={handleCloseNewChat}
                             >
-                              Create
+                              Cancel
                             </Button>
-                          )}
-                        </DialogActions>
+                            {isCreating ? (
+                              <CircularProgress size={24} sx={{ mx: 2 }} />
+                            ) : (
+                              <Button
+                                ref={createBtnRef}
+                                type="submit"
+                                variant="contained"
+                                color="primary"
+                              >
+                                Create
+                              </Button>
+                            )}
+                          </DialogActions>
+                        </Box>
                       </Dialog>
                     </ListItem>
                     <Typography variant="caption" sx={{ mb: 1, mt: 4, ml: 2 }}>
@@ -353,14 +427,17 @@ export default function Sidebar({
                             py: 1,
                             backgroundColor:
                               currentConversationId === c.conversationId
-                                ? "rgba(25, 118, 210, 0.3)" // selected color
+                                ? "primary.light"
                                 : "transparent",
-
+                            color:
+                              currentConversationId === c.conversationId
+                                ? "primary.main"
+                                : "text.secondary",
                             "&:hover": {
                               backgroundColor:
                                 currentConversationId === c.conversationId
-                                  ? "rgba(25, 118, 210, 0.3)" // keep same if selected
-                                  : "rgba(25, 118, 210, 0.1)",
+                                  ? "primary.light"
+                                  : "action.hover",
                             },
                           }}
                         >
@@ -460,19 +537,20 @@ export default function Sidebar({
                   onClick={() => handleNavigation(item.path)}
                   sx={{
                     borderRadius: 2,
-                    py: 1.5,
-                    backgroundColor: isActive ? "error.light" : "grey.200",
-                    color: isActive ? "#000" : "text.primary",
+                    py: 1.2,
+                    backgroundColor: isActive ? "error.light" : "transparent",
+                    color: isActive ? "error.main" : "text.primary",
                     "&:hover": {
-                      backgroundColor: isActive ? "error.light" : "grey.300",
-                      opacity: isActive ? 0.9 : 1,
+                      backgroundColor: isActive
+                        ? "error.light"
+                        : "action.hover",
                     },
                     transition: "all 0.2s",
                   }}
                 >
                   <ListItemIcon
                     sx={{
-                      color: isActive ? "#000" : "text.secondary",
+                      color: isActive ? "error.main" : "text.secondary",
                       minWidth: 40,
                     }}
                   >
@@ -537,7 +615,8 @@ export default function Sidebar({
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
             width: drawerWidth,
-            borderRight: "1px solid rgba(0, 0, 0, 0.08)",
+            borderRight: "1px solid",
+            borderColor: "divider",
             transition:
               "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important",
           },
@@ -558,7 +637,8 @@ export default function Sidebar({
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
             width: drawerWidth,
-            borderRight: "1px solid rgba(0, 0, 0, 0.08)",
+            borderRight: "1px solid",
+            borderColor: "divider",
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           },
         }}

@@ -15,12 +15,26 @@ import MainLayout from "../layouts/MainLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import { ROLES } from "../utils/roleUtils.js";
 import { getAllProjects } from "../api/projectApi.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function AppRouter() {
+  const { user } = useAuth();
   const [currentProjectWithAssistant, setCurrentProjectWithAssistant] =
     useState({ projectId: "", projectName: "" });
 
   const [currentConversationId, setCurrentConversationId] = useState("");
+  const [assistantActivated, setAssistantActivated] = useState(false);
+
+  const handleActivateAssistant = () => {
+    setAssistantActivated(true);
+    setCurrentConversationId("");
+  };
+
+  useEffect(() => {
+    setAssistantActivated(false);
+    setCurrentConversationId("");
+    setCurrentProjectWithAssistant({ projectId: "", projectName: "" });
+  }, [user?.userId]);
 
   return (
     <Routes>
@@ -78,14 +92,18 @@ export default function AppRouter() {
                 currentProjectWithAssistant,
                 currentConversationId,
                 setCurrentConversationId,
+                assistantActivated,
+                setAssistantActivated,
+                onActivateAssistant: handleActivateAssistant,
               }}
             >
               <AIAssistant
-                key={currentConversationId}
                 setCurrentProjectWithAssistant={setCurrentProjectWithAssistant}
                 currentProjectWithAssistant={currentProjectWithAssistant}
                 currentConversationId={currentConversationId}
                 setCurrentConversationId={setCurrentConversationId}
+                assistantActivated={assistantActivated}
+                onActivateAssistant={handleActivateAssistant}
               />
             </MainLayout>
           </RequireAuth>

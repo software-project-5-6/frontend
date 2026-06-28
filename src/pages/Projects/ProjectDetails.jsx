@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -38,6 +38,7 @@ import { useAuth } from "../../context/AuthContext";
 export default function ProjectDetails() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAdmin, userAttributes } = useAuth();
 
   const [project, setProject] = useState(null);
@@ -47,7 +48,9 @@ export default function ProjectDetails() {
   const [inviteUserDialogOpen, setInviteUserDialogOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
-  const [currentTab, setCurrentTab] = useState(0);
+  const [currentTab, setCurrentTab] = useState(
+    searchParams.get("result") === "true" ? 2 : 0
+  );
   const [inviteData, setInviteData] = useState({
     email: "",
     role: "VIEWER",

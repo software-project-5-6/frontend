@@ -65,7 +65,6 @@ export default function AuthLayout({ children }) {
           sx={{
             borderRadius: 3,
             overflow: "hidden",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           }}
         >
           {children}

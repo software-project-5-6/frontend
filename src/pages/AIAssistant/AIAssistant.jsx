@@ -16,11 +16,18 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import {
   Send as SendIcon,
   AutoAwesome as AIIcon,
-  Refresh as RefreshIcon,
+  ContentCopy as ContentCopyIcon,
+  DescriptionOutlined as DescriptionOutlinedIcon,
 } from "@mui/icons-material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { gradients } from "../../styles/theme";
@@ -33,22 +40,21 @@ export const AIAssistant = ({
   currentProjectWithAssistant,
   currentConversationId,
   setCurrentConversationId,
+  assistantActivated,
 }) => {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: "assist",
-      content:
-        "Hello! I'm your AI assistant. How can I help you with your projects today?",
-    },
-  ]);
+  const { user, userRole, isAdmin } = useAuth();
+  const welcomeMessage = "How can I help you today?";
+
+  const [messages, setMessages] = useState([]);
 
   const [isSending, setIsSending] = useState(false);
   const [selectedProject, setSelectedProject] = useState("");
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copiedMessageId, setCopiedMessageId] = useState(null);
+  const [openPromptDialog, setOpenPromptDialog] = useState(false);
+  const [selectedFinalPrompt, setSelectedFinalPrompt] = useState("");
   const [query, setQuery] = useState({
     projectId: "",
     conversationId: "",
@@ -57,18 +63,58 @@ export const AIAssistant = ({
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const copyResetTimeoutRef = useRef(null);
+  const lastAssistantMessageIndex = messages
+    .map((message) => message.role)
+    .lastIndexOf("assist");
 
   const location = useLocation();
 
   useEffect(() => {
-    if (currentConversationId) {
-      setQuery((prev) => ({
-        ...prev,
-        conversationId: currentConversationId,
-      }));
-      handleGettingConversationMessages(currentConversationId);
+    if (!assistantActivated) {
+      setMessages([]);
+      setCurrentConversationId("");
+      return;
     }
-  }, [currentConversationId]);
+
+    let isActive = true;
+
+    const loadConversationMessages = async () => {
+      if (!currentConversationId) {
+        return;
+      }
+
+      try {
+        const response = await getAllMessagesForConversation(
+          currentConversationId,
+        );
+        if (isActive) {
+          console.log(response.messages);
+          setMessages(response.messages);
+        }
+      } catch (error) {
+        if (isActive) {
+          setError("Failed to load conversation messages");
+        }
+      }
+    };
+
+    setQuery((prev) => ({
+      ...prev,
+      conversationId: currentConversationId || "",
+    }));
+
+    loadConversationMessages();
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    assistantActivated,
+    currentConversationId,
+    welcomeMessage,
+    setCurrentConversationId,
+  ]);
 
   useEffect(() => {
     if (selectedProject) {
@@ -78,23 +124,6 @@ export const AIAssistant = ({
       }));
     }
   }, [selectedProject]);
-
-  const handleGettingConversationMessages = async (id) => {
-    if (id) {
-      const response = await getAllMessagesForConversation(id);
-      console.log(response.messages);
-      setMessages(response.messages);
-    } else {
-      setMessages([
-        {
-          id: 1,
-          role: "assist",
-          content:
-            "Hello! I'm your AI assistant. How can I help you with your projects today?",
-        },
-      ]);
-    }
-  };
 
   // Fetch projects
   useEffect(() => {
@@ -107,7 +136,20 @@ export const AIAssistant = ({
       setError(null);
       const data = await getAllProjects();
       setProjects(data);
-      if (data.length > 0) setSelectedProject(data[0].id); // default selection
+      if (assistantActivated && data.length > 0) {
+        const existingProjectId = currentProjectWithAssistant?.projectId;
+        const initialProject =
+          data.find((project) => project.id === existingProjectId) || data[0];
+
+        setSelectedProject(initialProject.id);
+        // Keep the assistant aligned with the active project instead of
+        // resetting it whenever the page re-renders or the conversation changes.
+        setCurrentProjectWithAssistant({
+          ...(currentProjectWithAssistant || {}),
+          projectId: initialProject.id,
+          projectName: initialProject.projectName,
+        });
+      }
     } catch (err) {
       console.error("Error fetching projects:", err);
       setError("Failed to load projects. Please try again later.");
@@ -168,6 +210,7 @@ export const AIAssistant = ({
         id: Date.now() + 1,
         role: "assist",
         content: aiText.answer,
+        finalPrompt: aiText.finalPrompt,
       };
 
       setMessages((prev) => [...prev, aiResponse]);
@@ -182,22 +225,35 @@ export const AIAssistant = ({
     }
   };
 
+  const handleCopyMessage = async (message) => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopiedMessageId(message.id);
+      window.clearTimeout(copyResetTimeoutRef.current);
+      copyResetTimeoutRef.current = window.setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 1200);
+    } catch (copyError) {
+      setError("Failed to copy message");
+    }
+  };
+
+  const handleViewFinalPrompt = (message) => {
+    setSelectedFinalPrompt(message.finalPrompt || "");
+    setOpenPromptDialog(true);
+  };
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(copyResetTimeoutRef.current);
+    };
+  }, [assistantActivated]);
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const handleNewChat = () => {
-    setMessages([
-      {
-        id: 1,
-        role: "assist",
-        content:
-          "Hello! I'm your AI assistant. How can I help you with your projects today?",
-      },
-    ]);
   };
 
   return (
@@ -288,16 +344,6 @@ export const AIAssistant = ({
             </FormControl>
           </Box>
         </Box>
-        <IconButton
-          onClick={handleNewChat}
-          sx={{
-            background: gradients.primary,
-            color: "white",
-            "&:hover": { background: gradients.primary, opacity: 0.9 },
-          }}
-        >
-          <RefreshIcon />
-        </IconButton>
       </Box>
 
       {/* Messages */}
@@ -307,18 +353,56 @@ export const AIAssistant = ({
         </Box>
       ) : (
         <>
+          {!assistantActivated && (
+            <Box
+              sx={{
+                py: 6,
+                px: 4,
+                maxWidth: 640,
+                mx: "auto",
+                mt: 10,
+                textAlign: "center",
+                borderRadius: 3,
+                bgcolor: "background.paper",
+                mb: 4,
+                boxShadow: "none",
+              }}
+            >
+              <Typography
+                variant="h3"
+                fontWeight={800}
+                sx={{
+                  mb: 1,
+                  fontSize: { xs: "2rem", md: "3rem" },
+                  lineHeight: 1.15,
+                }}
+              >
+                {welcomeMessage}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.95rem", md: "1rem" } }}
+              >
+                Search your organization's knowledge base, summarize documents,
+                and get accurate answers based on available information.
+              </Typography>
+            </Box>
+          )}
           {/* Scrollable Messages Area */}
           <Box
             sx={{
               flex: 1,
               overflowY: "auto",
+              scrollbarGutter: "stable",
               py: 3,
+              pr: 1.5,
               display: "flex",
               flexDirection: "column",
               gap: 3,
             }}
           >
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <Fade in={true} key={message.id} timeout={500}>
                 <Box
                   sx={{
@@ -351,12 +435,13 @@ export const AIAssistant = ({
                       background:
                         message.role === "assist"
                           ? (theme) => theme.palette.grey[100]
-                          : gradients.primary,
+                          : (theme) => theme.palette.primary.light,
                       color:
-                        message.role === "assist" ? "text.primary" : "white",
-                      borderRadius: 2,
-                      borderTopLeftRadius: message.role === "assist" ? 0 : 2,
-                      borderTopRightRadius: message.role === "assist" ? 0 : 2,
+                        message.role === "assist"
+                          ? "text.primary"
+                          : (theme) => theme.palette.primary.dark,
+                      borderRadius: 3,
+                      overflow: "hidden",
                     }}
                   >
                     <Typography
@@ -365,6 +450,67 @@ export const AIAssistant = ({
                     >
                       {message.content}
                     </Typography>
+                    {message.role === "assist" && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-start",
+                          gap: 0.5,
+                          mt: 1,
+                        }}
+                      >
+                        <Tooltip
+                          title={
+                            copiedMessageId === message.id
+                              ? "Copied"
+                              : "Copy message"
+                          }
+                          arrow
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopyMessage(message)}
+                            sx={{
+                              color: "text.secondary",
+                              p: 0.5,
+                              "&:hover": {
+                                color: "primary.main",
+                                backgroundColor: "transparent",
+                              },
+                            }}
+                          >
+                            <ContentCopyIcon fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                        {index === lastAssistantMessageIndex && (
+                          <Tooltip
+                            title={
+                              message.finalPrompt?.trim()
+                                ? "View final prompt"
+                                : "No final prompt available"
+                            }
+                            arrow
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewFinalPrompt(message)}
+                                sx={{
+                                  color: "text.secondary",
+                                  p: 0.5,
+                                  "&:hover": {
+                                    color: "primary.main",
+                                    backgroundColor: "transparent",
+                                  },
+                                }}
+                              >
+                                <DescriptionOutlinedIcon fontSize="inherit" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    )}
                   </Paper>
                 </Box>
               </Fade>
@@ -387,8 +533,8 @@ export const AIAssistant = ({
                     sx={{
                       p: 2,
                       background: (theme) => theme.palette.grey[100],
-                      borderRadius: 2,
-                      borderTopLeftRadius: 0,
+                      borderRadius: 3,
+                      overflow: "hidden",
                     }}
                   >
                     <Box sx={{ display: "flex", gap: 0.5 }}>
@@ -501,6 +647,32 @@ export const AIAssistant = ({
               </Box>
             )}
           </Paper>
+
+          <Dialog
+            open={openPromptDialog}
+            onClose={() => setOpenPromptDialog(false)}
+            fullWidth
+            maxWidth="md"
+            scroll="paper"
+          >
+            <DialogTitle>Final Prompt Used</DialogTitle>
+            <DialogContent dividers sx={{ maxHeight: 420 }}>
+              <Box
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: "monospace",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.6,
+                }}
+              >
+                {selectedFinalPrompt || "No final prompt available."}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenPromptDialog(false)}>Close</Button>
+            </DialogActions>
+          </Dialog>
         </>
       )}
     </Box>

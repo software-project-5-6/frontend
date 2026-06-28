@@ -80,7 +80,7 @@ export default function Navbar({ onMenuClick }) {
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
         background: gradients.primary,
-        boxShadow: 3,
+        boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
         borderRadius: "0",
       }}
     >
