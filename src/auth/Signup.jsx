@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signUp, confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
+import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import {
   TextField,
@@ -27,12 +27,10 @@ export default function Signup() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  // 🔹 1. Handle Sign Up (Send confirmation code)
   const handleSignup = async () => {
     setLoading(true);
     setMessage("");
 
-    // Validate password match
     if (password !== confirmPassword) {
       setMessage("Passwords do not match");
       setLoading(false);
@@ -40,42 +38,23 @@ export default function Signup() {
     }
 
     try {
-      await signUp({
-        username: email,
+      const { error } = await supabase.auth.signUp({
+        email,
         password,
-        options: {
-          userAttributes: {
-            email,
-            name,
-          },
-        },
+        options: { data: { full_name: name } },
       });
-      setStage("confirm");
-      setMessage("Verification code sent to your email.");
-    } catch (error) {
-      // Check if user already exists but not confirmed
-      if (error.name === "UsernameExistsException") {
-        setMessage(
-          "This email is already registered. If you haven't verified, you can resend the code below."
-        );
-        setStage("confirm");
-      } else {
-        setMessage("❌ " + error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // 🔹 Handle Resend Code
-  const handleResendCode = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      await resendSignUpCode({
-        username: email,
-      });
-      setMessage("New verification code sent to your email.");
+      if (error) {
+        if (error.message?.toLowerCase().includes("already registered")) {
+          setMessage("This email is already registered. If you haven't verified, you can resend the code below.");
+          setStage("confirm");
+        } else {
+          setMessage("❌ " + error.message);
+        }
+      } else {
+        setStage("confirm");
+        setMessage("Verification code sent to your email.");
+      }
     } catch (error) {
       setMessage("❌ " + error.message);
     } finally {
@@ -83,17 +62,38 @@ export default function Signup() {
     }
   };
 
-  //Handle Confirmation (verify code)
+  const handleResendCode = async () => {
+    setLoading(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        setMessage("❌ " + error.message);
+      } else {
+        setMessage("New verification code sent to your email.");
+      }
+    } catch (error) {
+      setMessage("❌ " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConfirm = async () => {
     setLoading(true);
     setMessage("");
     try {
-      await confirmSignUp({
-        username: email,
-        confirmationCode: confirmCode,
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: confirmCode,
+        type: "signup",
       });
-      setMessage("Account confirmed! You can now log in.");
-      window.location.href = "/login";
+      if (error) {
+        setMessage("❌ " + error.message);
+      } else {
+        setMessage("✅ Account confirmed! You can now log in.");
+        setTimeout(() => { window.location.href = "/login"; }, 1500);
+      }
     } catch (error) {
       setMessage("❌ " + error.message);
     } finally {
@@ -248,26 +248,16 @@ export default function Signup() {
         </>
       ) : (
         <>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            We've sent a verification code to <strong>{email}</strong>. Check
-            your email (including spam folder) and enter the code below.
+          <Alert severity="success" sx={{ mb: 2 }}>
+            We sent a <strong>verification link</strong> to{" "}
+            <strong>{email}</strong>. Click the link in the email to confirm
+            your account, then come back here to log in.
           </Alert>
 
-          <TextField
-            label="Verification Code"
-            fullWidth
-            value={confirmCode}
-            onChange={(e) => setConfirmCode(e.target.value)}
-            margin="dense"
-            size="small"
-            placeholder="Enter 6-digit code"
-            sx={{
-              mb: 1.5,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-              },
-            }}
-          />
+          <Alert severity="info" sx={{ mb: 2, fontSize: "0.8rem" }}>
+            Check your spam / junk folder if you don't see it within a minute.
+          </Alert>
+
           <Button
             fullWidth
             variant="contained"
@@ -280,21 +270,13 @@ export default function Signup() {
               fontWeight: 600,
               fontSize: { xs: "0.9rem", sm: "1rem" },
               boxShadow: 2,
-              "&:hover": {
-                boxShadow: 4,
-              },
+              "&:hover": { boxShadow: 4 },
             }}
-            onClick={handleConfirm}
-            disabled={loading}
+            onClick={() => navigate("/login")}
           >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Verify Email"
-            )}
+            Go to Login
           </Button>
 
-          {/* Resend Code Button */}
           <Box
             sx={{
               mt: 2,
@@ -305,7 +287,7 @@ export default function Signup() {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              Didn't receive the code?
+              Didn't receive the email?
             </Typography>
             <Button
               onClick={handleResendCode}
@@ -318,19 +300,14 @@ export default function Signup() {
                 minWidth: "auto",
               }}
             >
-              Resend Code
+              {loading ? <CircularProgress size={16} /> : "Resend Link"}
             </Button>
           </Box>
 
-          {/* Back to Signup Button */}
           <Box sx={{ mt: 1, display: "flex", justifyContent: "center" }}>
             <Button
               onClick={() => setStage("signup")}
-              sx={{
-                textTransform: "none",
-                fontSize: "0.875rem",
-                color: "text.secondary",
-              }}
+              sx={{ textTransform: "none", fontSize: "0.875rem", color: "text.secondary" }}
             >
               Back to Sign Up
             </Button>

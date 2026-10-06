@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
+import { supabase } from "../supabaseClient";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   TextField,
@@ -39,14 +39,17 @@ export default function ConfirmSignup() {
     setLoading(true);
     setMessage("");
     try {
-      await confirmSignUp({
-        username: email,
-        confirmationCode: confirmCode,
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: confirmCode,
+        type: "signup",
       });
-      setMessage("✅ Account verified successfully! Redirecting to login...");
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      if (error) {
+        setMessage("❌ " + error.message);
+      } else {
+        setMessage("✅ Account verified successfully! Redirecting to login...");
+        setTimeout(() => { navigate("/login"); }, 2000);
+      }
     } catch (error) {
       setMessage("❌ " + error.message);
     } finally {
@@ -63,10 +66,12 @@ export default function ConfirmSignup() {
     setLoading(true);
     setMessage("");
     try {
-      await resendSignUpCode({
-        username: email,
-      });
-      setMessage("✅ New verification code sent to your email.");
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        setMessage("❌ " + error.message);
+      } else {
+        setMessage("✅ New verification code sent to your email.");
+      }
     } catch (error) {
       setMessage("❌ " + error.message);
     } finally {

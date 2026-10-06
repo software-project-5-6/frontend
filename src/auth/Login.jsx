@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { signIn } from "aws-amplify/auth";
-import api from "../api/axiosConfig";
+import { supabase } from "../supabaseClient";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   TextField,
@@ -27,48 +26,41 @@ export default function Login() {
 
   
   const handleLogin = async () => {
-  setLoading(true);
-  setMessage("");
+    setLoading(true);
+    setMessage("");
 
-  try {
-    console.time("signIn");
-    const result = await signIn({ username: email, password });
-    console.timeEnd("signIn");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (result.isSignedIn) {
-      await refreshAuth(); // fetch session and setContext
+      if (error) {
+        if (error.message?.toLowerCase().includes("email not confirmed")) {
+          setMessage("⚠️ Your account is not verified. Redirecting...");
+          setTimeout(() => {
+            navigate("/confirm-signup", { state: { email, fromLogin: true } });
+          }, 2000);
+        } else {
+          setMessage("❌ " + (error.message || "Login failed. Please check your credentials."));
+        }
+        return;
+      }
 
-      // background sync (non-blocking)
-      console.time("syncUserData");
-      api.post("/auth/sync", {}).finally(() => console.timeEnd("syncUserData"));
-
-      // Redirect immediately
-      const intendedDestination = location.state?.from;
-      navigate(intendedDestination || "/", { replace: true });
-    } else if (result.nextStep?.signInStep === "CONFIRM_SIGN_UP") {
-      setMessage("⚠️ Your account is not verified. Redirecting...");
-      setTimeout(() => {
-        navigate("/confirm-signup", { state: { email, fromLogin: true } });
-      }, 2000);
+      if (data.session) {
+        const { role } = await refreshAuth();
+        const intendedDestination = location.state?.from;
+        if (intendedDestination) {
+          navigate(intendedDestination, { replace: true });
+        } else if (role === "APP_ADMIN") {
+          navigate("/users", { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
+      }
+    } catch (error) {
+      setMessage("❌ " + (error.message || "Login failed. Please check your credentials."));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    if (
-      error.name === "UserNotConfirmedException" ||
-      error.code === "UserNotConfirmedException"
-    ) {
-      setMessage("⚠️ Your account is not verified. Redirecting...");
-      setTimeout(() => {
-        navigate("/confirm-signup", { state: { email, fromLogin: true } });
-      }, 2000);
-    } else {
-      setMessage(
-        "❌ " + (error.message || "Login failed. Please check your credentials.")
-      );
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <Box sx={{ p: { xs: 2.5, sm: 3 } }}>

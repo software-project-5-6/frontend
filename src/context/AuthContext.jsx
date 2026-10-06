@@ -1,11 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
-import {
-  getCurrentUser,
-  fetchAuthSession,
-  fetchUserAttributes,
-} from "aws-amplify/auth";
+import { supabase } from "../supabaseClient";
 import { useLocation } from "react-router-dom";
+import api from "../api/axiosConfig";
 
 const AuthContext = createContext(null);
 
@@ -15,7 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [userRole, setUserRole] = useState(null);
   const [userAttributes, setUserAttributes] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false); // 🆕 Prevent rechecking
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
     const publicRoutes = [
@@ -23,6 +19,7 @@ export const AuthProvider = ({ children }) => {
       "/signup",
       "/forgot-password",
       "/confirm-signup",
+      "/reset-password",
     ];
 
     const isPublicRoute = publicRoutes.some((route) =>
@@ -30,36 +27,46 @@ export const AuthProvider = ({ children }) => {
     );
 
     if (!isPublicRoute && !hasCheckedAuth) {
-      checkAuth().finally(() => {
-        setHasCheckedAuth(true);
-      });
+      checkAuth().finally(() => setHasCheckedAuth(true));
     } else if (isPublicRoute) {
-      setLoading(false); // Avoid blocking login/signup with spinner
+      setLoading(false);
     }
-  }, []); 
+  }, []);
 
   const checkAuth = async () => {
     try {
-      const currentUser = await getCurrentUser();
-      const session = await fetchAuthSession();
-      const attributes = await fetchUserAttributes();
-
-      const idToken = session.tokens?.idToken;
-      const role =
-        idToken?.payload["custom:role"] ||
-        idToken?.payload["cognito:groups"]?.[0] ||
-        "APP_USER";
-
-      setUser(currentUser);
-      setUserRole(role);
-      setUserAttributes(attributes);
-    } catch (error) {
-      if (error.name !== "UserUnAuthenticatedException") {
-        console.error("Auth check failed:", error);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setUser(null);
+        setUserRole(null);
+        setUserAttributes(null);
+        return { role: null };
       }
+
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+
+      setUser(supabaseUser);
+      setUserAttributes({
+        name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
+        email: supabaseUser.email,
+      });
+
+      let role = "APP_USER";
+      try {
+        const { data: profile } = await api.get("/users/me");
+        role = profile?.globalRole || "APP_USER";
+        console.debug("[AuthContext] resolved role from backend:", role);
+      } catch (err) {
+        console.error("[AuthContext] /users/me failed — role defaults to APP_USER:", err?.response?.status, err?.message);
+      }
+      setUserRole(role);
+      return { role };
+    } catch (error) {
+      console.error("Auth check failed:", error);
       setUser(null);
       setUserRole(null);
       setUserAttributes(null);
+      return { role: null };
     } finally {
       setLoading(false);
     }
@@ -79,7 +86,7 @@ export const AuthProvider = ({ children }) => {
     hasAnyRole,
     isAdmin,
     isUser,
-    refreshAuth: checkAuth, // Allow manual refresh (e.g., after login)
+    refreshAuth: checkAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

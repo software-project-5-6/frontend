@@ -135,11 +135,11 @@ export default function ViewUserDialog({ open, onClose, user }) {
                 </Stack>
 
                 {isAdmin() && (
-                  <InfoRow 
-                    icon={BadgeIcon} 
-                    label="COGNITO ID" 
-                    value={user.cognitoSub}
-                    isMonospace 
+                  <InfoRow
+                    icon={BadgeIcon}
+                    label="AUTH ID"
+                    value={user.authSub}
+                    isMonospace
                   />
                 )}
               </Stack>

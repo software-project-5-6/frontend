@@ -66,26 +66,21 @@ export const downloadArtifact = async (projectId, artifactId, filename) => {
   try {
     const response = await api.get(
       `/projects/${projectId}/artifacts/${artifactId}/download`,
-      {
-        responseType: "blob",
-      },
     );
+    const signedUrl = response.data?.url;
+    if (!signedUrl) throw new Error("No download URL returned from server");
 
-    // Extract filename from headers if available
-    const contentDisposition = response.headers["content-disposition"];
-    let downloadFilename = filename || "artifact";
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename="?(.+)"?/);
-      if (match?.[1]) downloadFilename = match[1];
-    }
+    // Append ?download=filename so Supabase sets Content-Disposition: attachment,
+    // forcing a file download instead of opening in the browser.
+    const downloadUrl = signedUrl + "&download=" + encodeURIComponent(filename || "artifact");
 
-    // Download as file
-    const url = window.URL.createObjectURL(response.data);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = downloadFilename;
+    link.href = downloadUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
     link.click();
-    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
   } catch (error) {
     console.error("Error downloading artifact:", error);
     throw error;

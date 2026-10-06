@@ -1,8 +1,5 @@
-import { fetchAuthSession } from "aws-amplify/auth";
+import { supabase } from "../supabaseClient";
 
-/**
- * Decode JWT token and extract user information
- */
 export const decodeToken = (token) => {
   try {
     const base64Url = token.split(".")[1];
@@ -20,49 +17,33 @@ export const decodeToken = (token) => {
   }
 };
 
-/**
- * Get user role from JWT token
- */
 export const getUserRole = async () => {
   try {
-    const session = await fetchAuthSession();
-    const idToken = session.tokens?.idToken;
-
-    // Try different possible locations for role in token
-    const role =
-      idToken?.payload["custom:role"] ||
-      idToken?.payload["cognito:groups"]?.[0] ||
-      "APP_USER"; // Default role
-
-    return role;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    const payload = decodeToken(session.access_token);
+    return payload?.role || "APP_USER";
   } catch (error) {
     console.error("Error getting user role:", error);
     return null;
   }
 };
 
-/**
- * Get user email from JWT token
- */
 export const getUserEmail = async () => {
   try {
-    const session = await fetchAuthSession();
-    const idToken = session.tokens?.idToken;
-    return idToken?.payload.email || null;
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.email || null;
   } catch (error) {
     console.error("Error getting user email:", error);
     return null;
   }
 };
 
-/**
- * Get all user claims from JWT token
- */
 export const getUserClaims = async () => {
   try {
-    const session = await fetchAuthSession();
-    const idToken = session.tokens?.idToken;
-    return idToken?.payload || null;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    return decodeToken(session.access_token);
   } catch (error) {
     console.error("Error getting user claims:", error);
     return null;

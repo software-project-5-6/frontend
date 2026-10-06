@@ -90,7 +90,7 @@ export default function AuthLayout({ children }) {
               fontSize: { xs: "0.7rem", sm: "0.75rem" },
             }}
           >
-            Secure authentication powered by AWS Cognito
+            Secure authentication powered by Supabase
           </Typography>
         </Box>
       </Container>

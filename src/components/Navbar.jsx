@@ -18,7 +18,7 @@ import {
   Settings as SettingsIcon,
   Menu as MenuIcon,
 } from "@mui/icons-material";
-import { signOut } from "aws-amplify/auth";
+import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { gradients } from "../styles/theme";
 import { useAuth } from "../context/AuthContext";
@@ -43,7 +43,7 @@ export default function Navbar({ onMenuClick }) {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await supabase.auth.signOut();
       navigate("/login", { replace: true });
     } catch (error) {
       console.error("Error signing out:", error);
