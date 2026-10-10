@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Box,
   Container,
@@ -34,6 +36,93 @@ import { gradients } from "../../styles/theme";
 import { useAuth } from "../../context/AuthContext";
 import { getAllProjects } from "../../api/projectApi";
 import { askProject, getAllMessagesForConversation } from "../../api/chatApi";
+
+const markdownComponents = {
+  a: ({ node, ...props }) => (
+    <a {...props} target="_blank" rel="noopener noreferrer" />
+  ),
+  code: ({ node, className, children, ...props }) => {
+    const isBlock = /language-/.test(className || "");
+    if (isBlock) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        {...props}
+        style={{
+          background: "rgba(79, 70, 229, 0.08)",
+          color: "#4338ca",
+          padding: "1px 5px",
+          borderRadius: 4,
+          fontSize: "0.85em",
+        }}
+      >
+        {children}
+      </code>
+    );
+  },
+};
+
+const markdownSx = {
+  "& > *:first-of-type": { mt: 0 },
+  "& > *:last-child": { mb: 0 },
+  "& p": { m: 0, mb: 1, fontSize: "0.875rem", lineHeight: 1.6 },
+  "& ul, & ol": { mt: 0, mb: 1, pl: 2.5 },
+  "& li": { fontSize: "0.875rem", lineHeight: 1.6, mb: 0.25 },
+  "& h1, & h2, & h3, & h4, & h5, & h6": {
+    mt: 1.5,
+    mb: 0.75,
+    fontWeight: 700,
+    lineHeight: 1.3,
+  },
+  "& h1": { fontSize: "1.25rem" },
+  "& h2": { fontSize: "1.15rem" },
+  "& h3": { fontSize: "1.05rem" },
+  "& h4, & h5, & h6": { fontSize: "0.95rem" },
+  "& pre": {
+    background: "#1e1b2e",
+    color: "#e5e7eb",
+    p: 1.5,
+    borderRadius: 2,
+    overflowX: "auto",
+    fontSize: "0.8rem",
+    my: 1,
+  },
+  "& pre code": {
+    background: "none",
+    color: "inherit",
+    padding: 0,
+    fontSize: "inherit",
+  },
+  "& blockquote": {
+    borderLeft: "3px solid",
+    borderColor: "divider",
+    m: 0,
+    my: 1,
+    pl: 1.5,
+    color: "text.secondary",
+    fontStyle: "italic",
+  },
+  "& table": {
+    borderCollapse: "collapse",
+    width: "100%",
+    my: 1,
+    fontSize: "0.8125rem",
+  },
+  "& th, & td": {
+    border: "1px solid",
+    borderColor: "divider",
+    p: 0.75,
+    textAlign: "left",
+  },
+  "& th": { fontWeight: 700, background: "rgba(79, 70, 229, 0.06)" },
+  "& a": { color: "primary.main" },
+  "& hr": { border: "none", borderTop: "1px solid", borderColor: "divider" },
+};
 
 export const AIAssistant = ({
   setCurrentProjectWithAssistant,
@@ -444,12 +533,23 @@ export const AIAssistant = ({
                       overflow: "hidden",
                     }}
                   >
-                    <Typography
-                      variant="body1"
-                      sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                    >
-                      {message.content}
-                    </Typography>
+                    {message.role === "assist" ? (
+                      <Box sx={{ ...markdownSx, wordBreak: "break-word" }}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={markdownComponents}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                      >
+                        {message.content}
+                      </Typography>
+                    )}
                     {message.role === "assist" && (
                       <Box
                         sx={{

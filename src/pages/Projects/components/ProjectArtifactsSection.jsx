@@ -16,6 +16,14 @@ import {
   Button,
   TextField,
   TableSortLabel, // Added for sorting
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 
 import {
@@ -53,6 +61,10 @@ export default function ProjectArtifactsSection({
   // --- NEW: Sorting State ---
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("uploadedAt");
+
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, artifact: null });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
     loadArtifacts();
@@ -154,16 +166,39 @@ export default function ProjectArtifactsSection({
     }
   };
 
-  const handleDelete = async (artifact) => {
-    if (!window.confirm(`Delete ${artifact.originalFilename}?`)) return;
+  const openDeleteDialog = (artifact) => {
+    setDeleteDialog({ open: true, artifact });
+  };
+
+  const closeDeleteDialog = () => {
+    if (!actionLoading) setDeleteDialog({ open: false, artifact: null });
+  };
+
+  const confirmDelete = async () => {
+    const artifact = deleteDialog.artifact;
+    setActionLoading(true);
     try {
       await deleteArtifact(project.id, artifact.id);
       loadArtifacts();
       if (onArtifactChange) {
         onArtifactChange();
       }
+      setDeleteDialog({ open: false, artifact: null });
+      setSnackbar({
+        open: true,
+        message: `"${artifact.originalFilename}" was deleted successfully.`,
+        severity: "success",
+      });
     } catch (error) {
       console.error("Delete failed:", error);
+      setDeleteDialog({ open: false, artifact: null });
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to delete the artifact.",
+        severity: "error",
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -414,7 +449,7 @@ export default function ProjectArtifactsSection({
                       <IconButton
                         className="action-btn"
                         size="small"
-                        onClick={() => handleDelete(artifact)}
+                        onClick={() => openDeleteDialog(artifact)}
                         sx={{
                           opacity: 0.6,
                           transition: "0.2s",
@@ -486,6 +521,51 @@ export default function ProjectArtifactsSection({
           }
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onClose={closeDeleteDialog} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ background: gradients.red, color: "white" }}>
+          Delete Artifact
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <DialogContentText>
+            Are you sure you want to delete{" "}
+            <strong>{deleteDialog.artifact?.originalFilename}</strong>? This
+            action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog} disabled={actionLoading} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            disabled={actionLoading}
+            variant="contained"
+            color="error"
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+          >
+            {actionLoading ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Feedback Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 }

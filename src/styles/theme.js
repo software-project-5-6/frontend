@@ -63,24 +63,25 @@ const colors = {
 // ================== TYPOGRAPHY ==================
 const typography = {
   fontFamily: "'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif",
-  fontSize: 14,
+  fontSize: 13,
 
   button: {
-    fontSize: "0.875rem",
+    fontSize: "0.8125rem",
     fontWeight: 600,
     textTransform: "none",
     letterSpacing: "0.01em",
   },
-  h1: { fontWeight: 800 },
-  h2: { fontWeight: 700 },
-  h3: { fontWeight: 700 },
-  h4: { fontWeight: 700 },
-  h5: { fontWeight: 600 },
-  h6: { fontWeight: 600 },
-  subtitle1: { fontWeight: 500 },
-  subtitle2: { fontWeight: 600 },
-  body1: { fontSize: "0.925rem", lineHeight: 1.5 },
-  body2: { fontSize: "0.85rem", lineHeight: 1.43 },
+  h1: { fontWeight: 800, fontSize: "2.5rem" },
+  h2: { fontWeight: 700, fontSize: "2rem" },
+  h3: { fontWeight: 700, fontSize: "1.75rem" },
+  h4: { fontWeight: 700, fontSize: "1.4rem" },
+  h5: { fontWeight: 600, fontSize: "1.1rem" },
+  h6: { fontWeight: 600, fontSize: "1rem" },
+  subtitle1: { fontWeight: 500, fontSize: "0.9rem" },
+  subtitle2: { fontWeight: 600, fontSize: "0.8125rem" },
+  body1: { fontSize: "0.875rem", lineHeight: 1.5 },
+  body2: { fontSize: "0.8rem", lineHeight: 1.43 },
+  caption: { fontSize: "0.7rem" },
 };
 
 // ================== SPACING ==================
@@ -88,18 +89,21 @@ const spacing = 8;
 
 // ================== BORDER RADIUS ==================
 const shape = {
-  borderRadius: 8,
+  borderRadius: 7,
 };
 
 // ================== COMPONENT OVERRIDES ==================
 const components = {
   // Button Component
   MuiButton: {
+    defaultProps: {
+      size: "small",
+    },
     styleOverrides: {
       root: {
-        borderRadius: 8,
-        padding: "8px 18px",
-        fontSize: "0.875rem",
+        borderRadius: 7,
+        padding: "6px 14px",
+        fontSize: "0.8125rem",
         fontWeight: 600,
         boxShadow: "none",
         textTransform: "none",
@@ -125,11 +129,25 @@ const components = {
     },
   },
 
+  // IconButton Component
+  MuiIconButton: {
+    defaultProps: {
+      size: "small",
+    },
+  },
+
+  // TextField Component
+  MuiTextField: {
+    defaultProps: {
+      size: "small",
+    },
+  },
+
   // Card Component
   MuiCard: {
     styleOverrides: {
       root: {
-        borderRadius: 12,
+        borderRadius: 10,
         border: "1px solid #e2e8f0",
         boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)",
       },
@@ -140,7 +158,7 @@ const components = {
   MuiOutlinedInput: {
     styleOverrides: {
       root: {
-        borderRadius: 8,
+        borderRadius: 7,
         "& .MuiOutlinedInput-notchedOutline": {
           borderColor: "#e2e8f0",
         },
@@ -187,12 +205,15 @@ const components = {
 
   // Chip Component
   MuiChip: {
+    defaultProps: {
+      size: "small",
+    },
     styleOverrides: {
       root: {
         borderRadius: 6,
         fontWeight: 600,
-        fontSize: "0.75rem",
-        height: "24px",
+        fontSize: "0.7rem",
+        height: "22px",
       },
       outlined: {
         borderColor: "#e2e8f0",
@@ -250,11 +271,12 @@ const components = {
   MuiTableCell: {
     styleOverrides: {
       root: {
-        padding: "16px 20px",
+        padding: "10px 16px",
         borderColor: "#f1f5f9",
+        fontSize: "0.8125rem",
       },
       head: {
-        padding: "14px 20px",
+        padding: "10px 16px",
       },
     },
   },
@@ -270,24 +292,24 @@ const components = {
   MuiDialogTitle: {
     styleOverrides: {
       root: {
-        fontSize: "1.125rem",
+        fontSize: "1.05rem",
         fontWeight: 700,
-        padding: "24px 24px 16px 24px",
+        padding: "18px 20px 14px 20px",
       },
     },
   },
   MuiDialogContent: {
     styleOverrides: {
       root: {
-        padding: "8px 24px 24px 24px",
+        padding: "6px 20px 20px 20px",
       },
     },
   },
   MuiDialogActions: {
     styleOverrides: {
       root: {
-        padding: "16px 24px 24px 24px",
-        gap: 8,
+        padding: "12px 20px 18px 20px",
+        gap: 6,
       },
     },
   },
@@ -317,10 +339,11 @@ export const theme = createTheme({
 
 // ================== EXPORT GRADIENTS ==================
 export const gradients = {
-  primary: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", // Midnight Slate
-  purple: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",  // Premium Indigo
-  pink: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",    // Violet-Indigo (replaces loud pink)
-  blue: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",    // Sky-Royal Blue
+  primary: "linear-gradient(135deg, #4338ca 0%, #6366f1 100%)", // Royal Indigo
+  purple: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)",  // Violet
+  pink: "linear-gradient(135deg, #db2777 0%, #ec4899 100%)",    // Pink
+  blue: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",    // Sky Blue
   orange: "linear-gradient(135deg, #f97316 0%, #eab308 100%)",  // Amber Orange
+  red: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",     // Danger Red (destructive confirmations)
 };
 

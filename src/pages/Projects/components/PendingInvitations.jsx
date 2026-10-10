@@ -282,6 +282,7 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
             onClick={confirmResend}
             disabled={actionLoading}
             variant="contained"
+            color="success"
             startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
           >
             {actionLoading ? "Sending…" : "Resend"}
@@ -291,7 +292,7 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
 
       {/* Revoke Confirmation Dialog */}
       <Dialog open={revokeDialog.open} onClose={closeRevokeDialog} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ background: gradients.orange, color: "white" }}>
+        <DialogTitle sx={{ background: gradients.red, color: "white" }}>
           Revoke Invitation
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>

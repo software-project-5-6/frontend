@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }) => {
 
       setUser(supabaseUser);
       setUserAttributes({
+        sub: supabaseUser.id,
         name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
         email: supabaseUser.email,
       });

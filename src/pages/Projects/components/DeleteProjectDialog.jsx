@@ -28,7 +28,7 @@ export default function DeleteProjectDialog({
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle
         sx={{
-          background: gradients.pink,
+          background: gradients.red,
           color: "white",
         }}
       >
