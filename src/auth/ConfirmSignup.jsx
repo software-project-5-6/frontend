@@ -14,7 +14,6 @@ export default function ConfirmSignup() {
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
-  const [confirmCode, setConfirmCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -24,40 +23,13 @@ export default function ConfirmSignup() {
       setEmail(location.state.email);
       if (location.state.fromLogin) {
         setMessage(
-          "⚠️ Your account is not verified yet. Please enter the verification code sent to your email."
+          "⚠️ Your account is not verified yet. Please check your email for the confirmation link."
         );
       }
     }
   }, [location]);
 
-  const handleConfirm = async () => {
-    if (!email) {
-      setMessage("❌ Please enter your email address");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: confirmCode,
-        type: "signup",
-      });
-      if (error) {
-        setMessage("❌ " + error.message);
-      } else {
-        setMessage("✅ Account verified successfully! Redirecting to login...");
-        setTimeout(() => { navigate("/login"); }, 2000);
-      }
-    } catch (error) {
-      setMessage("❌ " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
+  const handleResendLink = async () => {
     if (!email) {
       setMessage("❌ Please enter your email address first");
       return;
@@ -70,7 +42,7 @@ export default function ConfirmSignup() {
       if (error) {
         setMessage("❌ " + error.message);
       } else {
-        setMessage("✅ New verification code sent to your email.");
+        setMessage("✅ A new confirmation link has been sent to your email.");
       }
     } catch (error) {
       setMessage("❌ " + error.message);
@@ -99,13 +71,13 @@ export default function ConfirmSignup() {
         color="text.secondary"
         sx={{ mb: 2.5, fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
       >
-        Enter your email and the verification code to complete registration
+        Click the confirmation link we sent you to activate your account
       </Typography>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        If you closed the signup page before verifying, enter your email and the
-        verification code sent to you. If you need a new code, click "Resend
-        Code".
+        We sent a <strong>confirmation link</strong> to your email when you
+        signed up. Click that link to verify your account, then come back and
+        log in. If you can't find it, enter your email below and resend it.
       </Alert>
 
       <TextField
@@ -116,23 +88,7 @@ export default function ConfirmSignup() {
         onChange={(e) => setEmail(e.target.value)}
         margin="dense"
         size="small"
-        disabled={location.state?.email} // Disable if email came from navigation
-        sx={{
-          mb: 1.5,
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-          },
-        }}
-      />
-
-      <TextField
-        label="Verification Code"
-        fullWidth
-        value={confirmCode}
-        onChange={(e) => setConfirmCode(e.target.value)}
-        margin="dense"
-        size="small"
-        placeholder="Enter 6-digit code"
+        disabled={!!location.state?.email} // Disable if email came from navigation
         sx={{
           mb: 1.5,
           "& .MuiOutlinedInput-root": {
@@ -157,13 +113,13 @@ export default function ConfirmSignup() {
             boxShadow: 4,
           },
         }}
-        onClick={handleConfirm}
-        disabled={loading || !email || !confirmCode}
+        onClick={handleResendLink}
+        disabled={loading || !email}
       >
         {loading ? (
           <CircularProgress size={24} color="inherit" />
         ) : (
-          "Verify Email"
+          "Resend Confirmation Link"
         )}
       </Button>
 
@@ -185,34 +141,6 @@ export default function ConfirmSignup() {
         </Typography>
       )}
 
-      {/* Resend Code Button */}
-      <Box
-        sx={{
-          mt: 2,
-          display: "flex",
-          justifyContent: "center",
-          gap: 1,
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          Didn't receive the code?
-        </Typography>
-        <Button
-          onClick={handleResendCode}
-          disabled={loading || !email}
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.875rem",
-            p: 0.5,
-            minWidth: "auto",
-          }}
-        >
-          Resend Code
-        </Button>
-      </Box>
-
       {/* Back to Login */}
       <Box
         sx={{
@@ -228,7 +156,7 @@ export default function ConfirmSignup() {
           color="text.secondary"
           sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
         >
-          Remember your password?{" "}
+          Already verified?{" "}
           <Button
             onClick={() => navigate("/login")}
             sx={{

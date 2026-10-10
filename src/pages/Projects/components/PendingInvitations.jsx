@@ -15,6 +15,12 @@ import {
   Tooltip,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
 } from "@mui/material";
 import {
   DeleteOutline as DeleteIcon,
@@ -22,11 +28,17 @@ import {
   AccessTime as ClockIcon,
 } from "@mui/icons-material";
 import { invitationApi } from "../../../api/invitationApi";
+import { gradients } from "../../../styles/theme";
 
 export default function PendingInvitations({ projectId, refreshTrigger }) {
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [resendDialog, setResendDialog] = useState({ open: false, invitationId: null, email: "" });
+  const [revokeDialog, setRevokeDialog] = useState({ open: false, invitationId: null, email: "" });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
     if (projectId) {
@@ -40,40 +52,66 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
       setError(null);
       const data = await invitationApi.getPendingInvitations(projectId);
       setInvitations(data);
-      console.log("Loaded data:", data);
-      console.log("Loaded invitations:", invitations);
     } catch (err) {
       console.error("Error loading invitations:", err);
-      setError(
-        err.response?.data?.message || "Failed to load pending invitations"
-      );
+      setError(err.response?.data?.message || "Failed to load pending invitations");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRevoke = async (invitationId) => {
-    if (!window.confirm("Are you sure you want to revoke this invitation?")) {
-      return;
-    }
+  const openRevokeDialog = (invitation) => {
+    setRevokeDialog({ open: true, invitationId: invitation.id, email: invitation.email });
+  };
 
+  const closeRevokeDialog = () => {
+    if (!actionLoading) setRevokeDialog({ open: false, invitationId: null, email: "" });
+  };
+
+  const confirmRevoke = async () => {
+    setActionLoading(true);
     try {
-      await invitationApi.revokeInvitation(invitationId);
-      // Remove from list
-      setInvitations(invitations.filter((inv) => inv.id !== invitationId));
+      await invitationApi.revokeInvitation(revokeDialog.invitationId);
+      setInvitations(invitations.filter((inv) => inv.id !== revokeDialog.invitationId));
+      setRevokeDialog({ open: false, invitationId: null, email: "" });
+      setSnackbar({ open: true, message: "Invitation revoked successfully.", severity: "success" });
     } catch (err) {
       console.error("Error revoking invitation:", err);
-      alert(err.response?.data?.message || "Failed to revoke invitation");
+      setRevokeDialog({ open: false, invitationId: null, email: "" });
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Failed to revoke invitation.",
+        severity: "error",
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleResend = async (invitationId) => {
+  const openResendDialog = (invitation) => {
+    setResendDialog({ open: true, invitationId: invitation.id, email: invitation.email });
+  };
+
+  const closeResendDialog = () => {
+    if (!actionLoading) setResendDialog({ open: false, invitationId: null, email: "" });
+  };
+
+  const confirmResend = async () => {
+    setActionLoading(true);
     try {
-      await invitationApi.resendInvitation(invitationId);
-      alert("Invitation email resent successfully!");
+      await invitationApi.resendInvitation(resendDialog.invitationId);
+      setResendDialog({ open: false, invitationId: null, email: "" });
+      setSnackbar({ open: true, message: "Invitation email resent successfully!", severity: "success" });
     } catch (err) {
       console.error("Error resending invitation:", err);
-      alert(err.response?.data?.message || "Failed to resend invitation");
+      setResendDialog({ open: false, invitationId: null, email: "" });
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Failed to resend invitation.",
+        severity: "error",
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -159,9 +197,7 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
             {invitations.map((invitation) => (
               <TableRow
                 key={invitation.id}
-                sx={{
-                  "&:hover": { bgcolor: "action.hover" },
-                }}
+                sx={{ "&:hover": { bgcolor: "action.hover" } }}
               >
                 <TableCell>
                   <Typography variant="body2" fontWeight={500}>
@@ -199,14 +235,12 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
                   </Box>
                 </TableCell>
                 <TableCell align="center">
-                  <Box
-                    sx={{ display: "flex", gap: 1, justifyContent: "center" }}
-                  >
+                  <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
                     <Tooltip title="Resend invitation">
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => handleResend(invitation.id)}
+                        onClick={() => openResendDialog(invitation)}
                       >
                         <SendIcon fontSize="small" />
                       </IconButton>
@@ -215,7 +249,7 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleRevoke(invitation.id)}
+                        onClick={() => openRevokeDialog(invitation)}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -227,6 +261,77 @@ export default function PendingInvitations({ projectId, refreshTrigger }) {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Resend Confirmation Dialog */}
+      <Dialog open={resendDialog.open} onClose={closeResendDialog} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ background: gradients.blue, color: "white" }}>
+          Resend Invitation
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <DialogContentText>
+            Resend the invitation email to{" "}
+            <strong>{resendDialog.email}</strong>?{" "}
+            The expiry will be extended by 7 days.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeResendDialog} disabled={actionLoading} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmResend}
+            disabled={actionLoading}
+            variant="contained"
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+          >
+            {actionLoading ? "Sending…" : "Resend"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Revoke Confirmation Dialog */}
+      <Dialog open={revokeDialog.open} onClose={closeRevokeDialog} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ background: gradients.orange, color: "white" }}>
+          Revoke Invitation
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <DialogContentText>
+            Are you sure you want to revoke the invitation for{" "}
+            <strong>{revokeDialog.email}</strong>? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRevokeDialog} disabled={actionLoading} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmRevoke}
+            disabled={actionLoading}
+            variant="contained"
+            color="error"
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+          >
+            {actionLoading ? "Revoking…" : "Revoke"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Feedback Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

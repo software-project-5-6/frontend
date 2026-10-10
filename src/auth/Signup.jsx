@@ -21,7 +21,6 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [confirmCode, setConfirmCode] = useState("");
   const [stage, setStage] = useState("signup"); // "signup" → "confirm"
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -46,14 +45,14 @@ export default function Signup() {
 
       if (error) {
         if (error.message?.toLowerCase().includes("already registered")) {
-          setMessage("This email is already registered. If you haven't verified, you can resend the code below.");
+          setMessage("This email is already registered. If you haven't verified, you can resend the link below.");
           setStage("confirm");
         } else {
           setMessage("❌ " + error.message);
         }
       } else {
         setStage("confirm");
-        setMessage("Verification code sent to your email.");
+        setMessage("Verification link sent to your email.");
       }
     } catch (error) {
       setMessage("❌ " + error.message);
@@ -71,28 +70,6 @@ export default function Signup() {
         setMessage("❌ " + error.message);
       } else {
         setMessage("New verification code sent to your email.");
-      }
-    } catch (error) {
-      setMessage("❌ " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: confirmCode,
-        type: "signup",
-      });
-      if (error) {
-        setMessage("❌ " + error.message);
-      } else {
-        setMessage("✅ Account confirmed! You can now log in.");
-        setTimeout(() => { window.location.href = "/login"; }, 1500);
       }
     } catch (error) {
       setMessage("❌ " + error.message);
