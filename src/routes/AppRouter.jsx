@@ -15,8 +15,8 @@ import RequireRole from "../auth/RequireRole.jsx";
 import MainLayout from "../layouts/MainLayout.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import { ROLES } from "../utils/roleUtils.js";
-import { getAllProjects } from "../api/projectApi.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import ProfilePage from "./ProfilePage.jsx";
 
 export default function AppRouter() {
   const { user } = useAuth();
@@ -24,18 +24,18 @@ export default function AppRouter() {
     useState({ projectId: "", projectName: "" });
 
   const [currentConversationId, setCurrentConversationId] = useState("");
-  const [assistantActivated, setAssistantActivated] = useState(false);
-
-  const handleActivateAssistant = () => {
-    setAssistantActivated(true);
-    setCurrentConversationId("");
-  };
 
   useEffect(() => {
-    setAssistantActivated(false);
     setCurrentConversationId("");
     setCurrentProjectWithAssistant({ projectId: "", projectName: "" });
-  }, [user?.userId]);
+  }, [user?.id]);
+
+  const sharedSidebarProps = {
+    currentProjectWithAssistant,
+    setCurrentProjectWithAssistant,
+    currentConversationId,
+    setCurrentConversationId,
+  };
 
   return (
     <Routes>
@@ -96,23 +96,13 @@ export default function AppRouter() {
         path="/"
         element={
           <RequireAuth>
-            <MainLayout
-              sidebarProps={{
-                currentProjectWithAssistant,
-                currentConversationId,
-                setCurrentConversationId,
-                assistantActivated,
-                setAssistantActivated,
-                onActivateAssistant: handleActivateAssistant,
-              }}
-            >
+            <MainLayout sidebarProps={sharedSidebarProps}>
               <AIAssistant
+                key={currentConversationId}
                 setCurrentProjectWithAssistant={setCurrentProjectWithAssistant}
                 currentProjectWithAssistant={currentProjectWithAssistant}
                 currentConversationId={currentConversationId}
                 setCurrentConversationId={setCurrentConversationId}
-                assistantActivated={assistantActivated}
-                onActivateAssistant={handleActivateAssistant}
               />
             </MainLayout>
           </RequireAuth>
@@ -120,12 +110,11 @@ export default function AppRouter() {
       />
 
       {/* Projects routes */}
-
       <Route
         path="/projects"
         element={
           <RequireAuth>
-            <MainLayout>
+            <MainLayout sidebarProps={sharedSidebarProps}>
               <ProjectList />
             </MainLayout>
           </RequireAuth>
@@ -136,7 +125,7 @@ export default function AppRouter() {
         path="/projects/:projectId"
         element={
           <RequireAuth>
-            <MainLayout>
+            <MainLayout sidebarProps={sharedSidebarProps}>
               <ProjectDetails />
             </MainLayout>
           </RequireAuth>
@@ -149,7 +138,7 @@ export default function AppRouter() {
         element={
           <RequireAuth>
             <RequireRole allowedRoles={[ROLES.ADMIN]}>
-              <MainLayout>
+              <MainLayout sidebarProps={sharedSidebarProps}>
                 <UserList />
               </MainLayout>
             </RequireRole>
@@ -162,7 +151,7 @@ export default function AppRouter() {
         element={
           <RequireAuth>
             <RequireRole allowedRoles={[ROLES.ADMIN]}>
-              <MainLayout>
+              <MainLayout sidebarProps={sharedSidebarProps}>
                 <div>Settings - Admin Only</div>
               </MainLayout>
             </RequireRole>
@@ -176,8 +165,8 @@ export default function AppRouter() {
         element={
           <RequireAuth>
             <RequireRole allowedRoles={[ROLES.ADMIN, ROLES.USER]}>
-              <MainLayout>
-                <div>Profile Page</div>
+              <MainLayout sidebarProps={sharedSidebarProps}>
+                <ProfilePage />
               </MainLayout>
             </RequireRole>
           </RequireAuth>
