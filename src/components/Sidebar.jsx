@@ -60,12 +60,19 @@ export default function Sidebar({
   const location = useLocation();
   const { userRole, isAdmin } = useAuth();
 
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(() => location.pathname === "/");
   const [openNewChatDialog, setOpenNewChatDialog] = useState(false);
   const [chatTitle, setChatTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [conversations, setConversations] = useState([]);
+
+  // Automatically collapse AI Assistant when user is on any non-AI route
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      setExpanded(false);
+    }
+  }, [location.pathname]);
 
   // State for all projects
   const [projects, setProjects] = useState([]);
@@ -121,6 +128,7 @@ export default function Sidebar({
 
   // 3. Handle when the user switches projects via the Sidebar Dropdown
   const handleSidebarProjectSwitch = (e) => {
+    e.stopPropagation?.();
     const projId = e.target.value;
     const proj = projects.find((p) => p.id === projId);
 
@@ -135,6 +143,8 @@ export default function Sidebar({
       if (setCurrentConversationId) {
         setCurrentConversationId(""); // Clear active chat visually
       }
+
+      setExpanded(true);
 
       if (location.pathname !== "/") {
         navigate("/");
@@ -212,6 +222,7 @@ export default function Sidebar({
       if (setCurrentConversationId) {
         setCurrentConversationId(response);
       }
+      setExpanded(true);
       setOpenNewChatDialog(false);
       setChatTitle("");
 
@@ -324,21 +335,27 @@ export default function Sidebar({
                 <ListItemButton
                   onClick={() => {
                     if (isAIAssistant) {
-                      setExpanded(!expanded);
-                      handleNavigation(item.path);
+                      if (location.pathname === "/") {
+                        setExpanded((prev) => !prev);
+                      } else {
+                        setExpanded(true);
+                        handleNavigation(item.path);
+                      }
                     } else {
                       setExpanded(false);
                       handleNavigation(item.path);
-                      if (setCurrentConversationId) {
-                        setCurrentConversationId("");
-                      }
                     }
                   }}
                   sx={{
                     borderRadius: 2,
                     py: 1.5,
                     backgroundColor: isActive ? "primary.light" : "grey.200",
-                    color: isActive ? "#000" : "text.primary",
+                    color: (theme) =>
+                      isActive
+                        ? theme.palette.mode === "dark"
+                          ? "#ffffff"
+                          : "#000000"
+                        : "text.primary",
                     "&:hover": {
                       backgroundColor: isActive ? "primary.light" : "grey.300",
                       opacity: isActive ? 0.9 : 1,
@@ -348,7 +365,12 @@ export default function Sidebar({
                 >
                   <ListItemIcon
                     sx={{
-                      color: isActive ? "#000" : "text.secondary",
+                      color: (theme) =>
+                        isActive
+                          ? theme.palette.mode === "dark"
+                            ? "#ffffff"
+                            : "#000000"
+                          : "text.secondary",
                       minWidth: 40,
                     }}
                   >
@@ -380,7 +402,10 @@ export default function Sidebar({
                     {/* NEW CHAT BUTTON */}
                     <ListItem disablePadding sx={{ mb: 0.5, px: 2, pt: 1 }}>
                       <ListItemButton
-                        onClick={handleOpenNewChat}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenNewChat();
+                        }}
                         sx={{
                           borderRadius: 2,
                           py: 1,
@@ -528,11 +553,18 @@ export default function Sidebar({
                         }}
                       >
                         <ListItemButton
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (setCurrentConversationId) {
                               setCurrentConversationId(c.conversationId);
                             }
-                            navigate("/");
+                            setExpanded(true);
+                            if (location.pathname !== "/") {
+                              navigate("/");
+                            }
+                            if (onMobileClose) {
+                              onMobileClose();
+                            }
                           }}
                           sx={{
                             borderRadius: 2,
@@ -661,12 +693,20 @@ export default function Sidebar({
             return (
               <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
-                  onClick={() => handleNavigation(item.path)}
+                  onClick={() => {
+                    setExpanded(false);
+                    handleNavigation(item.path);
+                  }}
                   sx={{
                     borderRadius: 2,
                     py: 1.5,
                     backgroundColor: isActive ? "error.light" : "grey.200",
-                    color: isActive ? "#000" : "text.primary",
+                    color: (theme) =>
+                      isActive
+                        ? theme.palette.mode === "dark"
+                          ? "#ffffff"
+                          : "#000000"
+                        : "text.primary",
                     "&:hover": {
                       backgroundColor: isActive ? "error.light" : "grey.300",
                       opacity: isActive ? 0.9 : 1,
@@ -676,7 +716,12 @@ export default function Sidebar({
                 >
                   <ListItemIcon
                     sx={{
-                      color: isActive ? "#000" : "text.secondary",
+                      color: (theme) =>
+                        isActive
+                          ? theme.palette.mode === "dark"
+                            ? "#ffffff"
+                            : "#000000"
+                          : "text.secondary",
                       minWidth: 40,
                     }}
                   >
