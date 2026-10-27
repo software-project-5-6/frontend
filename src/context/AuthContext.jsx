@@ -8,8 +8,10 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [dbUser, setDbUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userAttributes, setUserAttributes] = useState(null);
+  const [authTime, setAuthTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -38,8 +40,10 @@ export const AuthProvider = ({ children }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setUser(null);
+        setDbUser(null);
         setUserRole(null);
         setUserAttributes(null);
+        setAuthTime(null);
         return { role: null };
       }
 
@@ -52,21 +56,41 @@ export const AuthProvider = ({ children }) => {
         email: supabaseUser.email,
       });
 
+      const loginTime =
+        supabaseUser.last_sign_in_at || new Date().toISOString();
+      setAuthTime(loginTime);
+
       let role = "APP_USER";
+      let databaseUser = null;
       try {
         const { data: profile } = await api.get("/users/me");
         role = profile?.globalRole || "APP_USER";
+        databaseUser = profile || null;
         console.debug("[AuthContext] resolved role from backend:", role);
       } catch (err) {
-        console.error("[AuthContext] /users/me failed — role defaults to APP_USER:", err?.response?.status, err?.message);
+        console.error(
+          "[AuthContext] /users/me failed — role defaults to APP_USER:",
+          err?.response?.status,
+          err?.message
+        );
+        databaseUser = {
+          fullName:
+            supabaseUser.user_metadata?.full_name || supabaseUser.email,
+          email: supabaseUser.email,
+          globalRole: "APP_USER",
+          createdAt: supabaseUser.created_at,
+        };
       }
+      setDbUser(databaseUser);
       setUserRole(role);
       return { role };
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
+      setDbUser(null);
       setUserRole(null);
       setUserAttributes(null);
+      setAuthTime(null);
       return { role: null };
     } finally {
       setLoading(false);
@@ -80,8 +104,10 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    dbUser,
     userRole,
     userAttributes,
+    authTime,
     loading,
     hasRole,
     hasAnyRole,

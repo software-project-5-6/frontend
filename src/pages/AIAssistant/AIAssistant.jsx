@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Box,
-  Container,
   Typography,
   TextField,
   IconButton,
@@ -31,17 +29,15 @@ import {
   ContentCopy as ContentCopyIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
 } from "@mui/icons-material";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { gradients } from "../../styles/theme";
-import { useAuth } from "../../context/AuthContext";
 import { getAllProjects } from "../../api/projectApi";
 import { askProject, getAllMessagesForConversation } from "../../api/chatApi";
 
 const markdownComponents = {
-  a: ({ node, ...props }) => (
+  a: ({ ...props }) => (
     <a {...props} target="_blank" rel="noopener noreferrer" />
   ),
-  code: ({ node, className, children, ...props }) => {
+  code: ({ className, children, ...props }) => {
     const isBlock = /language-/.test(className || "");
     if (isBlock) {
       return (
@@ -124,18 +120,20 @@ const markdownSx = {
   "& hr": { border: "none", borderTop: "1px solid", borderColor: "divider" },
 };
 
+const INITIAL_MESSAGE = {
+  id: 1,
+  role: "assist",
+  content:
+    "Hello! I'm your AI assistant. How can I help you with your projects today?",
+};
+
 export const AIAssistant = ({
   setCurrentProjectWithAssistant,
   currentProjectWithAssistant,
   currentConversationId,
   setCurrentConversationId,
-  assistantActivated,
 }) => {
-  const { user, userRole, isAdmin } = useAuth();
-  const welcomeMessage = "How can I help you today?";
-
-  const [messages, setMessages] = useState([]);
-
+  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
   const [isSending, setIsSending] = useState(false);
   const [selectedProject, setSelectedProject] = useState("");
   const [projects, setProjects] = useState([]);
@@ -157,54 +155,24 @@ export const AIAssistant = ({
     .map((message) => message.role)
     .lastIndexOf("assist");
 
-  const location = useLocation();
-
+  // Keep local query conversationId and messages in sync with currentConversationId
   useEffect(() => {
-    if (!assistantActivated) {
-      setMessages([]);
-      setCurrentConversationId("");
-      return;
+    if (currentConversationId) {
+      setQuery((prev) => ({
+        ...prev,
+        conversationId: currentConversationId,
+      }));
+      handleGettingConversationMessages(currentConversationId);
+    } else {
+      setQuery((prev) => ({
+        ...prev,
+        conversationId: "",
+      }));
+      setMessages([INITIAL_MESSAGE]);
     }
+  }, [currentConversationId]);
 
-    let isActive = true;
-
-    const loadConversationMessages = async () => {
-      if (!currentConversationId) {
-        return;
-      }
-
-      try {
-        const response = await getAllMessagesForConversation(
-          currentConversationId,
-        );
-        if (isActive) {
-          console.log(response.messages);
-          setMessages(response.messages);
-        }
-      } catch (error) {
-        if (isActive) {
-          setError("Failed to load conversation messages");
-        }
-      }
-    };
-
-    setQuery((prev) => ({
-      ...prev,
-      conversationId: currentConversationId || "",
-    }));
-
-    loadConversationMessages();
-
-    return () => {
-      isActive = false;
-    };
-  }, [
-    assistantActivated,
-    currentConversationId,
-    welcomeMessage,
-    setCurrentConversationId,
-  ]);
-
+  // Keep local query projectId in sync with selectedProject
   useEffect(() => {
     if (selectedProject) {
       setQuery((prev) => ({
@@ -214,9 +182,17 @@ export const AIAssistant = ({
     }
   }, [selectedProject]);
 
-  // Fetch projects
+  // Keep local selectedProject synced with global Sidebar state
+  useEffect(() => {
+    if (currentProjectWithAssistant?.projectId) {
+      setSelectedProject(currentProjectWithAssistant.projectId);
+    }
+  }, [currentProjectWithAssistant?.projectId]);
+
+  // Fetch projects on mount
   useEffect(() => {
     fetchProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchProjects = async () => {
@@ -224,26 +200,41 @@ export const AIAssistant = ({
       setLoading(true);
       setError(null);
       const data = await getAllProjects();
-      setProjects(data);
-      if (assistantActivated && data.length > 0) {
-        const existingProjectId = currentProjectWithAssistant?.projectId;
-        const initialProject =
-          data.find((project) => project.id === existingProjectId) || data[0];
+      const projectList = data || [];
+      setProjects(projectList);
 
-        setSelectedProject(initialProject.id);
-        // Keep the assistant aligned with the active project instead of
-        // resetting it whenever the page re-renders or the conversation changes.
-        setCurrentProjectWithAssistant({
-          ...(currentProjectWithAssistant || {}),
-          projectId: initialProject.id,
-          projectName: initialProject.projectName,
-        });
+      if (currentProjectWithAssistant?.projectId) {
+        setSelectedProject(currentProjectWithAssistant.projectId);
+      } else if (projectList.length > 0) {
+        setSelectedProject(projectList[0].id);
+        if (setCurrentProjectWithAssistant) {
+          setCurrentProjectWithAssistant({
+            ...(currentProjectWithAssistant || {}),
+            projectId: projectList[0].id,
+            projectName: projectList[0].projectName,
+          });
+        }
       }
     } catch (err) {
       console.error("Error fetching projects:", err);
       setError("Failed to load projects. Please try again later.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGettingConversationMessages = async (id) => {
+    if (!id) return;
+    try {
+      const response = await getAllMessagesForConversation(id);
+      if (response && response.messages && response.messages.length > 0) {
+        setMessages(response.messages);
+      } else {
+        setMessages([INITIAL_MESSAGE]);
+      }
+    } catch (err) {
+      console.error("Failed to load conversation messages:", err);
+      setError("Failed to load conversation messages");
     }
   };
 
@@ -255,27 +246,14 @@ export const AIAssistant = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // const getDisplayName = () => {
-  //   if (user?.username) return user.username;
-  //   if (user?.userId) return user.userId.split("-")[0];
-  //   return "User";
-  // };
-
-  // const getInitials = () => {
-  //   const displayName = getDisplayName();
-  //   if (!displayName || displayName === "User") return "U";
-  //   const names = displayName.split(" ");
-  //   if (names.length >= 2) {
-  //     return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
-  //   }
-  //   return displayName.charAt(0).toUpperCase();
-  // };
-
   const handleSendMessage = async () => {
     if (!query.question.trim() || isSending) return;
+    if (!currentConversationId) {
+      setError("Please select or create a conversation from the sidebar first.");
+      return;
+    }
 
-    const questionText = query.question; // capture BEFORE clearing
-
+    const questionText = query.question.trim();
     const userMessage = {
       id: Date.now(),
       role: "user",
@@ -283,6 +261,10 @@ export const AIAssistant = ({
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setQuery((prev) => ({
+      ...prev,
+      question: "",
+    }));
 
     const updatedQuery = {
       projectId: selectedProject,
@@ -291,23 +273,19 @@ export const AIAssistant = ({
     };
 
     setIsSending(true);
-    console.log("conversationId at send:", currentConversationId);
     try {
       const aiText = await askProject(updatedQuery);
 
       const aiResponse = {
         id: Date.now() + 1,
         role: "assist",
-        content: aiText.answer,
-        finalPrompt: aiText.finalPrompt,
+        content: aiText?.answer || "No response received.",
+        finalPrompt: aiText?.finalPrompt,
       };
 
       setMessages((prev) => [...prev, aiResponse]);
-      setQuery((prev) => ({
-        ...prev,
-        question: "",
-      }));
     } catch (err) {
+      console.error("Failed to get AI response:", err);
       setError("Failed to get AI response");
     } finally {
       setIsSending(false);
@@ -322,7 +300,7 @@ export const AIAssistant = ({
       copyResetTimeoutRef.current = window.setTimeout(() => {
         setCopiedMessageId(null);
       }, 1200);
-    } catch (copyError) {
+    } catch {
       setError("Failed to copy message");
     }
   };
@@ -336,7 +314,7 @@ export const AIAssistant = ({
     return () => {
       window.clearTimeout(copyResetTimeoutRef.current);
     };
-  }, [assistantActivated]);
+  }, []);
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -368,7 +346,7 @@ export const AIAssistant = ({
         }}
       >
         <Box
-          sx={{ display: "flex", alignItems: "center", gap: 2, width: "90%" }}
+          sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}
         >
           <Avatar sx={{ background: gradients.primary, width: 40, height: 40 }}>
             <AIIcon />
@@ -379,7 +357,6 @@ export const AIAssistant = ({
               justifyContent: "space-between",
               alignItems: "center",
               flex: 1,
-              mb: 2,
             }}
           >
             <Box>
@@ -394,34 +371,34 @@ export const AIAssistant = ({
             {error && (
               <Alert
                 severity="error"
-                sx={{ mb: 3, ml: 3 }}
+                sx={{ mb: 1, ml: 3 }}
                 onClose={() => setError(null)}
               >
                 {error}
               </Alert>
             )}
 
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Current Project</InputLabel>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel id="ai-project-select-label">Current Project</InputLabel>
               <Select
+                labelId="ai-project-select-label"
                 value={selectedProject}
                 label="Current Project"
                 onChange={(e) => {
-                  setSelectedProject(e.target.value);
-                  const project = projects.find((p) => p.id == e.target.value);
-                  setCurrentProjectWithAssistant({
-                    ...(currentProjectWithAssistant || {}),
-                    projectId: project?.id ?? "",
-                    projectName: project?.projectName ?? "",
-                  });
-                  setMessages([
-                    {
-                      id: 1,
-                      role: "assist",
-                      content:
-                        "Hello! I'm your AI assistant. How can I help you with your projects today?",
-                    },
-                  ]);
+                  const newProjId = e.target.value;
+                  setSelectedProject(newProjId);
+                  const project = projects.find((p) => p.id === newProjId);
+                  if (setCurrentProjectWithAssistant) {
+                    setCurrentProjectWithAssistant({
+                      ...(currentProjectWithAssistant || {}),
+                      projectId: project?.id ?? "",
+                      projectName: project?.projectName ?? "",
+                    });
+                  }
+                  if (setCurrentConversationId) {
+                    setCurrentConversationId("");
+                  }
+                  setMessages([INITIAL_MESSAGE]);
                 }}
               >
                 {projects.map((project) => (
@@ -435,50 +412,13 @@ export const AIAssistant = ({
         </Box>
       </Box>
 
-      {/* Messages */}
+      {/* Messages Area */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress />
         </Box>
       ) : (
         <>
-          {!assistantActivated && (
-            <Box
-              sx={{
-                py: 6,
-                px: 4,
-                maxWidth: 640,
-                mx: "auto",
-                mt: 10,
-                textAlign: "center",
-                borderRadius: 3,
-                bgcolor: "background.paper",
-                mb: 4,
-                boxShadow: "none",
-              }}
-            >
-              <Typography
-                variant="h3"
-                fontWeight={800}
-                sx={{
-                  mb: 1,
-                  fontSize: { xs: "2rem", md: "3rem" },
-                  lineHeight: 1.15,
-                }}
-              >
-                {welcomeMessage}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontSize: { xs: "0.95rem", md: "1rem" } }}
-              >
-                Search your organization's knowledge base, summarize documents,
-                and get accurate answers based on available information.
-              </Typography>
-            </Box>
-          )}
-          {/* Scrollable Messages Area */}
           <Box
             sx={{
               flex: 1,
@@ -492,7 +432,7 @@ export const AIAssistant = ({
             }}
           >
             {messages.map((message, index) => (
-              <Fade in={true} key={message.id} timeout={500}>
+              <Fade in={true} key={message.id || index} timeout={500}>
                 <Box
                   sx={{
                     display: "flex",
@@ -680,11 +620,14 @@ export const AIAssistant = ({
                 fullWidth
                 multiline
                 maxRows={4}
-                placeholder="Type your message here..."
+                placeholder={
+                  !currentConversationId
+                    ? "Select or create a conversation from the sidebar to chat..."
+                    : "Type your message here..."
+                }
                 value={query.question}
                 onChange={(e) => {
                   setQuery((prev) => ({ ...prev, question: e.target.value }));
-                  // setMessages((prev)=>[...prev,{id:Date.now(),role:"user",content:e.target.value}])
                 }}
                 onKeyPress={handleKeyPress}
                 disabled={isSending}
@@ -718,7 +661,7 @@ export const AIAssistant = ({
               </IconButton>
             </Box>
 
-            {messages.length === 1 && (
+            {messages.length <= 1 && (
               <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
                 {[
                   "How can you help me?",
@@ -748,6 +691,7 @@ export const AIAssistant = ({
             )}
           </Paper>
 
+          {/* Prompt Dialog */}
           <Dialog
             open={openPromptDialog}
             onClose={() => setOpenPromptDialog(false)}

@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState, useRef } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Collapse } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
@@ -23,6 +23,10 @@ import {
   Alert,
   Typography,
   IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Add,
@@ -40,6 +44,7 @@ import {
   getAllConversationsForProject,
   deleteAllMessagesForConversation,
 } from "../api/chatApi";
+import { getAllProjects } from "../api/projectApi";
 
 const drawerWidth = 240;
 
@@ -47,82 +52,104 @@ export default function Sidebar({
   mobileOpen,
   onMobileClose,
   currentProjectWithAssistant,
+  setCurrentProjectWithAssistant,
   currentConversationId,
   setCurrentConversationId,
-  assistantActivated,
-  setAssistantActivated,
-  onActivateAssistant,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { userRole, isAdmin } = useAuth();
 
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [openNewChatDialog, setOpenNewChatDialog] = useState(false);
   const [chatTitle, setChatTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [conversations, setConversations] = useState([]);
 
+  // State for all projects
+  const [projects, setProjects] = useState([]);
+
+  // State specifically for the "New Chat" dialog dropdown
+  const [dialogSelectedProjectId, setDialogSelectedProjectId] = useState("");
+
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
 
-  const cancelBtnRef = useRef(null);
-  const createBtnRef = useRef(null);
-
-  const handleDialogKeyDown = (e) => {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        createBtnRef.current?.focus();
+  // 1. Fetch all projects when Sidebar mounts so the dropdown has data
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await getAllProjects();
+        setProjects(data || []);
+      } catch (err) {
+        console.error("Error fetching projects for sidebar:", err);
       }
-      return;
-    }
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      cancelBtnRef.current?.focus();
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      createBtnRef.current?.focus();
+    };
+    fetchProjects();
+  }, []);
+
+  const handleGettingProjectConversations = async (projectId) => {
+    try {
+      const response = await getAllConversationsForProject(projectId);
+      const fetchedChats = response?.conversations || [];
+
+      setConversations((prevChats) => {
+        // Smart merge to prevent newly created chats from disappearing
+        const locallyCreatedChats = prevChats.filter(
+          (local) =>
+            !fetchedChats.some(
+              (fetched) => fetched.conversationId === local.conversationId
+            )
+        );
+        return [...fetchedChats, ...locallyCreatedChats];
+      });
+    } catch (err) {
+      console.error("Error getting project conversations:", err);
     }
   };
 
+  // 2. Fetch chats ONLY for the currently active project
   useEffect(() => {
-    handleGettingProjectConversations();
+    if (currentProjectWithAssistant?.projectId) {
+      setConversations([]); // Instantly clear old chats for snappy UX
+      handleGettingProjectConversations(currentProjectWithAssistant.projectId);
+    } else {
+      setConversations([]);
+    }
   }, [currentProjectWithAssistant?.projectId]);
 
-  useEffect(() => {
-    if (assistantActivated) {
-      setExpanded(true);
-    } else {
-      setExpanded(false);
-    }
-  }, [assistantActivated]);
+  // 3. Handle when the user switches projects via the Sidebar Dropdown
+  const handleSidebarProjectSwitch = (e) => {
+    const projId = e.target.value;
+    const proj = projects.find((p) => p.id === projId);
 
-  const handleGettingProjectConversations = async () => {
-    if (!currentProjectWithAssistant?.projectId) {
-      setConversations([]);
-      setCurrentConversationId("");
-      return;
-    }
-    const response = await getAllConversationsForProject(
-      currentProjectWithAssistant.projectId,
-    );
-    const projectConversations = response.conversations || [];
-    setConversations(projectConversations);
+    if (proj) {
+      if (setCurrentProjectWithAssistant) {
+        setCurrentProjectWithAssistant({
+          ...(currentProjectWithAssistant || {}),
+          projectId: proj.id,
+          projectName: proj.projectName,
+        });
+      }
+      if (setCurrentConversationId) {
+        setCurrentConversationId(""); // Clear active chat visually
+      }
 
-    const hasCurrentConversation = projectConversations.some(
-      (conversation) => conversation.conversationId === currentConversationId,
-    );
-
-    if (!hasCurrentConversation) {
-      setCurrentConversationId(projectConversations[0]?.conversationId || "");
+      if (location.pathname !== "/") {
+        navigate("/");
+      }
     }
-    console.log(response);
   };
 
   const handleOpenNewChat = () => {
     setOpenNewChatDialog(true);
+    // Pre-fill the dialog dropdown with the currently active project
+    if (currentProjectWithAssistant?.projectId) {
+      setDialogSelectedProjectId(currentProjectWithAssistant.projectId);
+    } else if (projects.length > 0) {
+      setDialogSelectedProjectId(projects[0].id);
+    }
   };
 
   const handleCloseNewChat = () => {
@@ -136,58 +163,99 @@ export default function Sidebar({
       setError("Please enter a chat title");
       return;
     }
-    if (!currentProjectWithAssistant?.projectId) {
-      setError("Please select a project first");
+    if (!dialogSelectedProjectId) {
+      setError("Please select a project");
       return;
     }
     setError("");
-    const newConversationObject = {
-      projectId: currentProjectWithAssistant.projectId,
-      title: chatTitle,
-    };
-    console.log(newConversationObject);
-    setIsCreating(true);
-    const response = await createConversation(newConversationObject);
-    setConversations((prev) => [
-      ...prev,
-      {
-        conversationId: response,
-        title: chatTitle,
-      },
-    ]);
-    setCurrentConversationId(response);
 
-    setIsCreating(false);
-    setOpenNewChatDialog(false);
-    setChatTitle("");
-    setError("");
-    console.log("response:", response);
+    const newConversationObject = {
+      projectId: dialogSelectedProjectId,
+      title: chatTitle.trim(),
+    };
+
+    setIsCreating(true);
+    try {
+      const response = await createConversation(newConversationObject);
+
+      const newChat = {
+        conversationId: response,
+        title: chatTitle.trim(),
+      };
+
+      const isDifferentProject =
+        currentProjectWithAssistant?.projectId !== dialogSelectedProjectId;
+
+      if (isDifferentProject) {
+        setConversations([newChat]); // Show only the new chat immediately
+
+        if (setCurrentProjectWithAssistant) {
+          const proj = projects.find((p) => p.id === dialogSelectedProjectId);
+          if (proj) {
+            setCurrentProjectWithAssistant({
+              projectId: proj.id,
+              projectName: proj.projectName,
+            });
+          }
+        }
+
+        // Fetch the rest of the history for the newly switched project
+        handleGettingProjectConversations(dialogSelectedProjectId);
+      } else {
+        // Same project: Append directly to list
+        setConversations((prev) => {
+          if (prev.find((c) => c.conversationId === response)) return prev;
+          return [...prev, newChat];
+        });
+      }
+
+      if (setCurrentConversationId) {
+        setCurrentConversationId(response);
+      }
+      setOpenNewChatDialog(false);
+      setChatTitle("");
+
+      if (location.pathname !== "/") {
+        navigate("/");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to create conversation");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleDeleteConversation = async () => {
-    const conversationToDelete = selectedConversation?.conversationId;
-    if (!conversationToDelete) {
+    if (!selectedConversation) return;
+
+    try {
+      await deleteAllMessagesForConversation(
+        selectedConversation.conversationId
+      );
+
+      const remainingChats = conversations.filter(
+        (c) => c.conversationId !== selectedConversation.conversationId
+      );
+      setConversations(remainingChats);
       setOpenDeleteDialog(false);
-      return;
-    }
 
-    const response =
-      await deleteAllMessagesForConversation(conversationToDelete);
-    console.log("number of messages deleted:", response);
-
-    const remainingConversations = conversations.filter(
-      (conversation) => conversation.conversationId !== conversationToDelete,
-    );
-
-    setConversations(remainingConversations);
-    setOpenDeleteDialog(false);
-
-    if (currentConversationId === conversationToDelete) {
-      setCurrentConversationId(remainingConversations[0]?.conversationId || "");
+      if (remainingChats.length > 0) {
+        if (setCurrentConversationId) {
+          setCurrentConversationId(
+            remainingChats[remainingChats.length - 1].conversationId
+          );
+        }
+      } else {
+        if (setCurrentConversationId) {
+          setCurrentConversationId("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete conversation:", err);
     }
   };
 
-  // Menu items visible to all authenticated users
   const commonMenuItems = [
     {
       text: "AI Assistant",
@@ -201,7 +269,6 @@ export default function Sidebar({
     },
   ];
 
-  // Menu items visible only to admins
   const adminMenuItems = [
     {
       text: "Users",
@@ -224,7 +291,6 @@ export default function Sidebar({
     }
   };
 
-  // Format role display text
   const getRoleDisplayText = () => {
     if (!userRole) return "Loading...";
     return userRole.replace("APP_", "");
@@ -232,8 +298,7 @@ export default function Sidebar({
 
   const drawer = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar /> {/* Spacer for AppBar */}
-      {/* User Role Badge - at top */}
+      <Toolbar />
       <Box sx={{ px: 2, pt: 1, pb: 2 }}>
         <Chip
           label={getRoleDisplayText()}
@@ -248,45 +313,42 @@ export default function Sidebar({
           }}
         />
       </Box>
-      {/* Main Navigation */}
       <List sx={{ px: 1, pt: 0, flex: 1 }}>
-        {/* Common menu items - visible to all */}
         {commonMenuItems.map((item) => {
           const isActive = location.pathname === item.path;
           const isAIAssistant = item.text === "AI Assistant";
 
           return (
             <Fragment key={item.text}>
-              <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              <ListItem disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
                   onClick={() => {
                     if (isAIAssistant) {
-                      if (!assistantActivated) {
-                        onActivateAssistant?.();
-                      }
                       setExpanded(!expanded);
                       handleNavigation(item.path);
                     } else {
+                      setExpanded(false);
                       handleNavigation(item.path);
-                      setCurrentConversationId("");
+                      if (setCurrentConversationId) {
+                        setCurrentConversationId("");
+                      }
                     }
                   }}
                   sx={{
                     borderRadius: 2,
-                    py: 1.2,
-                    backgroundColor: isActive ? "primary.light" : "transparent",
-                    color: isActive ? "primary.main" : "text.primary",
+                    py: 1.5,
+                    backgroundColor: isActive ? "primary.light" : "grey.200",
+                    color: isActive ? "#000" : "text.primary",
                     "&:hover": {
-                      backgroundColor: isActive
-                        ? "primary.light"
-                        : "action.hover",
+                      backgroundColor: isActive ? "primary.light" : "grey.300",
+                      opacity: isActive ? 0.9 : 1,
                     },
                     transition: "all 0.2s",
                   }}
                 >
                   <ListItemIcon
                     sx={{
-                      color: isActive ? "primary.main" : "text.secondary",
+                      color: isActive ? "#000" : "text.secondary",
                       minWidth: 40,
                     }}
                   >
@@ -306,6 +368,7 @@ export default function Sidebar({
                   )}
                 </ListItemButton>
               </ListItem>
+
               {isAIAssistant && (
                 <Collapse
                   in={expanded}
@@ -314,103 +377,151 @@ export default function Sidebar({
                   sx={{ mb: 2 }}
                 >
                   <List component="div" disablePadding>
-                    <ListItem disablePadding sx={{ mb: 0.5 }}>
+                    {/* NEW CHAT BUTTON */}
+                    <ListItem disablePadding sx={{ mb: 0.5, px: 2, pt: 1 }}>
                       <ListItemButton
                         onClick={handleOpenNewChat}
                         sx={{
-                          pl: 4,
                           borderRadius: 2,
                           py: 1,
-                          backgroundColor: "transparent",
-                          color: "text.primary",
-                          "&:hover": { backgroundColor: "action.hover" },
+                          backgroundColor: "grey.100",
+                          "&:hover": { backgroundColor: "grey.200" },
                         }}
                       >
-                        <ListItemIcon>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
                           <Add />
                         </ListItemIcon>
                         <ListItemText
                           primary="New Chat"
-                          primaryTypographyProps={{ fontSize: "0.85rem" }}
+                          primaryTypographyProps={{
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                          }}
                         />
                       </ListItemButton>
+
+                      {/* NEW CHAT DIALOG */}
                       <Dialog
                         open={openNewChatDialog}
                         onClose={handleCloseNewChat}
-                        onKeyDown={handleDialogKeyDown}
+                        maxWidth="sm"
+                        fullWidth
                       >
-                        <Box
-                          component="form"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            handleCreateChat();
-                          }}
-                        >
-                          <DialogTitle>Start New Chat</DialogTitle>
-                          <DialogContent>
-                            <p>Create a new conversation</p>
-                            {error && (
-                              <Alert severity="error" sx={{ mb: 2 }}>
-                                {error}
-                              </Alert>
-                            )}
-                            <TextField
-                              autoFocus
-                              margin="dense"
-                              label="Chat Title"
-                              fullWidth
-                              variant="outlined"
-                              value={chatTitle}
-                              onChange={(e) => setChatTitle(e.target.value)}
-                              sx={{ mb: 2 }}
-                            />
-                            <TextField
-                              margin="dense"
-                              label="Selected Project"
-                              fullWidth
-                              variant="outlined"
-                              value={
-                                currentProjectWithAssistant?.projectName ||
-                                "No project selected"
+                        <DialogTitle>Start New Chat</DialogTitle>
+                        <DialogContent>
+                          <Typography variant="body2" sx={{ mb: 2 }}>
+                            Create a new conversation
+                          </Typography>
+                          {error && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                              {error}
+                            </Alert>
+                          )}
+
+                          <TextField
+                            autoFocus
+                            margin="dense"
+                            label="Chat Title"
+                            fullWidth
+                            variant="outlined"
+                            value={chatTitle}
+                            onChange={(e) => setChatTitle(e.target.value)}
+                            sx={{ mb: 3 }}
+                          />
+
+                          <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel id="project-select-label">
+                              Assign to Project
+                            </InputLabel>
+                            <Select
+                              labelId="project-select-label"
+                              value={dialogSelectedProjectId}
+                              label="Assign to Project"
+                              onChange={(e) =>
+                                setDialogSelectedProjectId(e.target.value)
                               }
-                              InputProps={{
-                                readOnly: true,
-                              }}
-                              sx={{ mb: 2 }}
-                            />
-                          </DialogContent>
-                          <DialogActions>
-                            <Button
-                              ref={cancelBtnRef}
-                              type="button"
-                              onClick={handleCloseNewChat}
                             >
-                              Cancel
+                              {projects.map((project) => (
+                                <MenuItem key={project.id} value={project.id}>
+                                  {project.projectName}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={handleCloseNewChat}>Cancel</Button>
+                          {isCreating ? (
+                            <CircularProgress size={24} sx={{ mx: 2 }} />
+                          ) : (
+                            <Button
+                              onClick={handleCreateChat}
+                              variant="contained"
+                              color="primary"
+                            >
+                              Create
                             </Button>
-                            {isCreating ? (
-                              <CircularProgress size={24} sx={{ mx: 2 }} />
-                            ) : (
-                              <Button
-                                ref={createBtnRef}
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                              >
-                                Create
-                              </Button>
-                            )}
-                          </DialogActions>
-                        </Box>
+                          )}
+                        </DialogActions>
                       </Dialog>
                     </ListItem>
-                    <Typography variant="caption" sx={{ mb: 1, mt: 4, ml: 2 }}>
-                      Recent
-                    </Typography>
+
+                    {/* DYNAMIC CHAT LIST HEADER */}
+                    <Box sx={{ mt: 2, mb: 1, px: 2 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 700,
+                          color: "text.secondary",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        {currentProjectWithAssistant?.projectName
+                          ? `Chats for ${currentProjectWithAssistant.projectName}`
+                          : "Chats"}
+                      </Typography>
+                    </Box>
+
+                    {/* CATEGORY DROPDOWN: Select Project to view its chats */}
+                    <Box sx={{ px: 2, pt: 1, pb: 1 }}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel id="sidebar-project-filter">
+                          Project Category
+                        </InputLabel>
+                        <Select
+                          labelId="sidebar-project-filter"
+                          value={currentProjectWithAssistant?.projectId || ""}
+                          label="Project Category"
+                          onChange={handleSidebarProjectSwitch}
+                          sx={{
+                            backgroundColor: "background.paper",
+                            borderRadius: 1,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {projects.length === 0 && (
+                            <MenuItem value="" disabled>
+                              Loading projects...
+                            </MenuItem>
+                          )}
+                          {projects.map((project) => (
+                            <MenuItem key={project.id} value={project.id}>
+                              {project.projectName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+
+                    {/* CHAT LIST */}
                     {conversations?.map((c) => (
                       <ListItem
+                        key={c.conversationId}
                         disablePadding
                         sx={{
                           mb: 0.5,
+                          px: 2,
                           "&:hover .delete-btn": {
                             opacity: 1,
                           },
@@ -418,32 +529,35 @@ export default function Sidebar({
                       >
                         <ListItemButton
                           onClick={() => {
-                            setCurrentConversationId(c.conversationId);
+                            if (setCurrentConversationId) {
+                              setCurrentConversationId(c.conversationId);
+                            }
                             navigate("/");
                           }}
                           sx={{
-                            pl: 4,
                             borderRadius: 2,
                             py: 1,
                             backgroundColor:
                               currentConversationId === c.conversationId
-                                ? "primary.light"
+                                ? "rgba(25, 118, 210, 0.15)"
                                 : "transparent",
-                            color:
-                              currentConversationId === c.conversationId
-                                ? "primary.main"
-                                : "text.secondary",
                             "&:hover": {
                               backgroundColor:
                                 currentConversationId === c.conversationId
-                                  ? "primary.light"
-                                  : "action.hover",
+                                  ? "rgba(25, 118, 210, 0.25)"
+                                  : "rgba(0, 0, 0, 0.04)",
                             },
                           }}
                         >
                           <ListItemText
                             primary={c.title}
-                            primaryTypographyProps={{ fontSize: "0.85rem" }}
+                            primaryTypographyProps={{
+                              fontSize: "0.85rem",
+                              fontWeight:
+                                currentConversationId === c.conversationId
+                                  ? 600
+                                  : 400,
+                            }}
                           />
                           <IconButton
                             className="delete-btn"
@@ -454,15 +568,29 @@ export default function Sidebar({
                               setOpenDeleteDialog(true);
                             }}
                             sx={{
-                              opacity: 0, // hidden by default
+                              opacity: 0,
                               transition: "0.2s",
                             }}
                           >
-                            <DeleteIcon fontSize="small" />
+                            <DeleteIcon fontSize="small" color="error" />
                           </IconButton>
                         </ListItemButton>
                       </ListItem>
                     ))}
+
+                    {/* EMPTY STATE */}
+                    {conversations.length === 0 &&
+                      currentProjectWithAssistant?.projectId && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ px: 3, py: 1, fontStyle: "italic" }}
+                        >
+                          No chats for this project yet.
+                        </Typography>
+                      )}
+
+                    {/* DELETE DIALOG */}
                     <Dialog
                       open={openDeleteDialog}
                       onClose={() => setOpenDeleteDialog(false)}
@@ -471,7 +599,7 @@ export default function Sidebar({
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
-                          <DeleteIcon fontSize="small" />
+                          <DeleteIcon fontSize="small" color="error" />
                           Delete Conversation
                         </Box>
                       </DialogTitle>
@@ -481,13 +609,13 @@ export default function Sidebar({
                           <Typography
                             component="span"
                             sx={{
-                              fontWeight: 400,
+                              fontWeight: 600,
                               color: "error.main",
                             }}
                           >
                             "{selectedConversation?.title}"
                           </Typography>
-                          ?
+                          ? This cannot be undone.
                         </Typography>
                       </DialogContent>
 
@@ -512,7 +640,6 @@ export default function Sidebar({
           );
         })}
 
-        {/* Admin-only menu items */}
         <ShowForAdmin>
           <Divider sx={{ mx: 2, my: 2 }} />
           <ListItem sx={{ px: 2, mb: 1 }}>
@@ -537,20 +664,19 @@ export default function Sidebar({
                   onClick={() => handleNavigation(item.path)}
                   sx={{
                     borderRadius: 2,
-                    py: 1.2,
-                    backgroundColor: isActive ? "error.light" : "transparent",
-                    color: isActive ? "error.main" : "text.primary",
+                    py: 1.5,
+                    backgroundColor: isActive ? "error.light" : "grey.200",
+                    color: isActive ? "#000" : "text.primary",
                     "&:hover": {
-                      backgroundColor: isActive
-                        ? "error.light"
-                        : "action.hover",
+                      backgroundColor: isActive ? "error.light" : "grey.300",
+                      opacity: isActive ? 0.9 : 1,
                     },
                     transition: "all 0.2s",
                   }}
                 >
                   <ListItemIcon
                     sx={{
-                      color: isActive ? "error.main" : "text.secondary",
+                      color: isActive ? "#000" : "text.secondary",
                       minWidth: 40,
                     }}
                   >
@@ -569,9 +695,8 @@ export default function Sidebar({
           })}
         </ShowForAdmin>
       </List>
-      {/* Bottom Section */}
+
       <Box sx={{ px: 2, pb: 2 }}>
-        {/* Help Section */}
         <Box
           sx={{
             p: 2,
@@ -602,21 +727,19 @@ export default function Sidebar({
       component="nav"
       sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
     >
-      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
         onClose={onMobileClose}
         ModalProps={{
-          keepMounted: true, // Better mobile performance
+          keepMounted: true,
         }}
         sx={{
           display: { xs: "block", sm: "none" },
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
             width: drawerWidth,
-            borderRight: "1px solid",
-            borderColor: "divider",
+            borderRight: "1px solid rgba(0, 0, 0, 0.08)",
             transition:
               "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important",
           },
@@ -629,7 +752,6 @@ export default function Sidebar({
         {drawer}
       </Drawer>
 
-      {/* Desktop Drawer */}
       <Drawer
         variant="permanent"
         sx={{
@@ -637,8 +759,7 @@ export default function Sidebar({
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
             width: drawerWidth,
-            borderRight: "1px solid",
-            borderColor: "divider",
+            borderRight: "1px solid rgba(0, 0, 0, 0.08)",
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           },
         }}
