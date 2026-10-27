@@ -41,6 +41,11 @@ export default function Navbar({ onMenuClick }) {
     navigate("/profile");
   };
 
+  const handleSettings = () => {
+    handleMenuClose();
+    navigate("/settings");
+  };
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -204,7 +209,7 @@ export default function Navbar({ onMenuClick }) {
 
           {/* Settings Menu Item */}
           <MenuItem
-            onClick={handleMenuClose}
+            onClick={handleSettings}
             sx={{
               transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               "&:hover": {

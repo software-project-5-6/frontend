@@ -17,6 +17,7 @@ import AuthLayout from "../layouts/AuthLayout.jsx";
 import { ROLES } from "../utils/roleUtils.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import ProfilePage from "./ProfilePage.jsx";
+import Settings from "../pages/Settings/Settings.jsx";
 
 export default function AppRouter() {
   const { user } = useAuth();
@@ -146,13 +147,14 @@ export default function AppRouter() {
         }
       />
 
+      {/* Settings - accessible by all authenticated users (role-based sections inside) */}
       <Route
         path="/settings"
         element={
           <RequireAuth>
-            <RequireRole allowedRoles={[ROLES.ADMIN]}>
+            <RequireRole allowedRoles={[ROLES.ADMIN, ROLES.USER]}>
               <MainLayout sidebarProps={sharedSidebarProps}>
-                <div>Settings - Admin Only</div>
+                <Settings />
               </MainLayout>
             </RequireRole>
           </RequireAuth>
