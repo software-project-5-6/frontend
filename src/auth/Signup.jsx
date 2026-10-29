@@ -13,6 +13,7 @@ import {
   Alert,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { BRANDING } from "../config/branding";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -99,7 +100,7 @@ export default function Signup() {
         sx={{ mb: 2.5, fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
       >
         {stage === "signup"
-          ? "Sign up to get started with PSMS"
+          ? `Sign up to get started with ${BRANDING.appName}`
           : "Enter the verification code sent to your email"}
       </Typography>
 

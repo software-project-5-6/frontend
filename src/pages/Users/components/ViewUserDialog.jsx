@@ -20,38 +20,40 @@ import {
   Badge as BadgeIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
-import { useAuth } from "../../../context/AuthContext";
 
-// --- NEW: Reusable Component for Data Rows ---
-const InfoRow = ({ icon: Icon, label, value, isMonospace = false, valueColor = "text.primary" }) => (
-  <Paper
-    elevation={0}
-    variant="outlined"
-    sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}
-  >
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-      <Icon fontSize="small" sx={{ color: "text.disabled" }} />
-      <Typography variant="caption" color="text.secondary" fontWeight={700}>
-        {label}
-      </Typography>
-    </Box>
-    <Typography
-      variant="body1"
-      fontWeight={600}
-      color={valueColor}
-      sx={{ 
-        ml: 4, 
-        fontFamily: isMonospace ? 'monospace' : 'inherit',
-        wordBreak: 'break-all' 
-      }}
+// --- Reusable Component for Data Rows ---
+const InfoRow = ({ icon: IconComponent, label, value, isMonospace = false, valueColor = "text.primary" }) => {
+  const Icon = IconComponent;
+  return (
+    <Paper
+      elevation={0}
+      variant="outlined"
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}
     >
-      {value || "N/A"}
-    </Typography>
-  </Paper>
-);
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Icon fontSize="small" sx={{ color: "text.disabled" }} />
+        <Typography variant="caption" color="text.secondary" fontWeight={700}>
+          {label}
+        </Typography>
+      </Box>
+      <Typography
+        variant="body1"
+        fontWeight={600}
+        color={valueColor}
+        sx={{ 
+          ml: 4, 
+          fontFamily: isMonospace ? 'monospace' : 'inherit',
+          wordBreak: 'break-all' 
+        }}
+      >
+        {value || "N/A"}
+      </Typography>
+    </Paper>
+  );
+};
 
 export default function ViewUserDialog({ open, onClose, user }) {
-  const { isAdmin } = useAuth();
+
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -86,72 +88,86 @@ export default function ViewUserDialog({ open, onClose, user }) {
         >
           <CloseIcon />
         </IconButton>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          User Details
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          View system information and role permissions
-        </Typography>
+
+        <Stack direction="row" spacing={2.5} alignItems="center">
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <PersonIcon sx={{ fontSize: 32 }} />
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              {user?.fullName || "User Details"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Viewing global system user profile
+            </Typography>
+          </Box>
+        </Stack>
       </Box>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ px: 4, py: 2 }}>
         {user && (
-          <Box sx={{ px: 4, pb: 4 }}>
-            <Stack spacing={3}>
-              
-              <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ letterSpacing: 1, textTransform: 'uppercase' }}>
-                Profile Information
-              </Typography>
+          <Box>
+            <Stack spacing={2}>
+              {/* Name & Role Rows */}
+              <InfoRow 
+                icon={BadgeIcon} 
+                label="FULL NAME" 
+                value={user.fullName} 
+              />
 
-              <Stack spacing={2}>
-                <InfoRow 
-                  icon={PersonIcon} 
-                  label="FULL NAME" 
-                  value={user.fullName} 
-                />
-                
-                <InfoRow 
-                  icon={EmailIcon} 
-                  label="EMAIL ADDRESS" 
-                  value={user.email} 
-                />
+              <InfoRow 
+                icon={EmailIcon} 
+                label="EMAIL ADDRESS" 
+                value={user.email} 
+              />
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <Box flex={1}>
-                    <InfoRow 
-                      icon={AdminIcon} 
-                      label="ROLE" 
-                      value={getRoleLabel(user.globalRole)}
-                      valueColor={user.globalRole === "APP_ADMIN" ? "error.main" : "primary.main"}
-                    />
-                  </Box>
-                  <Box flex={1}>
-                    <InfoRow 
-                      icon={CalendarIcon} 
-                      label="JOINED DATE" 
-                      value={formatDate(user.createdAt)} 
-                    />
-                  </Box>
-                </Stack>
-
-                {isAdmin() && (
-                  <InfoRow
-                    icon={BadgeIcon}
-                    label="AUTH ID"
-                    value={user.authSub}
-                    isMonospace
+              <Paper
+                elevation={0}
+                variant="outlined"
+                sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <AdminIcon fontSize="small" sx={{ color: "text.disabled" }} />
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    SYSTEM ROLE
+                  </Typography>
+                </Box>
+                <Box sx={{ ml: 4, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    label={getRoleLabel(user.globalRole)}
+                    size="small"
+                    color={user.globalRole === "APP_ADMIN" ? "error" : "primary"}
+                    sx={{ fontWeight: 600, fontSize: "0.75rem" }}
                   />
-                )}
-              </Stack>
+                  <Typography variant="caption" color="text.secondary">
+                    {user.globalRole === "APP_ADMIN" ? "(Full System Access)" : "(Standard Member)"}
+                  </Typography>
+                </Box>
+              </Paper>
 
-              {/* Info Banner */}
-              <Box
-                sx={{
-                  p: 2,
+              <InfoRow 
+                icon={CalendarIcon} 
+                label="ACCOUNT CREATED" 
+                value={formatDate(user.createdAt)} 
+              />
+
+              {/* Notice Banner */}
+              <Box 
+                sx={{ 
+                  p: 2, 
+                  bgcolor: (theme) => alpha(theme.palette.info.main, 0.08), 
                   borderRadius: 2,
-                  bgcolor: (theme) => alpha(theme.palette.info.main, 0.05),
-                  border: '1px solid',
-                  borderColor: (theme) => alpha(theme.palette.info.main, 0.2),
                   display: 'flex',
                   gap: 1.5,
                   alignItems: 'flex-start'

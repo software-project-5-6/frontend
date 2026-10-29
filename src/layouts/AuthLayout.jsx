@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Container, Typography, Paper } from "@mui/material";
 import { gradients } from "../styles/theme";
+import { BRANDING } from "../config/branding";
 
 export default function AuthLayout({ children }) {
   return (
@@ -34,6 +35,21 @@ export default function AuthLayout({ children }) {
       >
         {/* Logo/Brand Section */}
         <Box sx={{ textAlign: "center", mb: { xs: 2.5, sm: 3 } }}>
+          <Box
+            component="img"
+            src={BRANDING.logo}
+            alt={BRANDING.appName}
+            sx={{
+              height: { xs: 58, sm: 70 },
+              width: "auto",
+              maxHeight: 76,
+              objectFit: "contain",
+              mx: "auto",
+              mb: 1.5,
+              display: "block",
+              filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.25))",
+            }}
+          />
           <Typography
             variant="h3"
             fontWeight={800}
@@ -41,21 +57,22 @@ export default function AuthLayout({ children }) {
               color: "white",
               mb: 0.5,
               textShadow: "0 2px 10px rgba(0,0,0,0.2)",
-              letterSpacing: 1,
-              fontSize: { xs: "2rem", sm: "2.5rem" },
+              letterSpacing: 0.5,
+              fontSize: { xs: "1.75rem", sm: "2.1rem" },
             }}
           >
-            PSMS
+            {BRANDING.appName}
           </Typography>
           <Typography
             variant="body2"
             sx={{
               color: "rgba(255,255,255,0.95)",
               fontWeight: 500,
-              fontSize: { xs: "0.875rem", sm: "0.95rem" },
+              fontSize: { xs: "0.85rem", sm: "0.95rem" },
+              letterSpacing: "0.2px",
             }}
           >
-            Project Space Management System
+            {BRANDING.tagline}
           </Typography>
         </Box>
 
@@ -81,7 +98,7 @@ export default function AuthLayout({ children }) {
               fontSize: { xs: "0.75rem", sm: "0.8rem" },
             }}
           >
-            © 2025 PSMS. All rights reserved.
+            © 2026 {BRANDING.companyName}. All rights reserved.
           </Typography>
           <Typography
             variant="caption"

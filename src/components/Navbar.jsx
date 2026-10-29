@@ -22,6 +22,7 @@ import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { gradients } from "../styles/theme";
 import { useAuth } from "../context/AuthContext";
+import { BRANDING } from "../config/branding";
 
 export default function Navbar({ onMenuClick }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -96,22 +97,68 @@ export default function Navbar({ onMenuClick }) {
           edge="start"
           onClick={onMenuClick}
           sx={{ mr: 2, display: { sm: "none" } }}
+          aria-label="Open navigation menu"
         >
           <MenuIcon />
         </IconButton>
 
-        {/* App Title/Logo */}
-        <Typography
-          variant="h6"
-          component="div"
+        {/* Company & Product Brand Lockup: [Majstro Logo] Majstro PSMS */}
+        <Box
+          onClick={() => navigate("/")}
           sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 1, sm: 1.5 },
             flexGrow: 1,
-            fontWeight: 700,
-            letterSpacing: "0.5px",
+            cursor: "pointer",
+            userSelect: "none",
+            transition: "opacity 0.2s ease-in-out",
+            "&:hover": {
+              opacity: 0.92,
+            },
           }}
         >
-          Space Management
-        </Typography>
+          <Box
+            component="img"
+            src={BRANDING.logo}
+            alt={BRANDING.appName}
+            sx={{
+              height: { xs: 28, sm: 34 },
+              width: "auto",
+              maxHeight: 36,
+              objectFit: "contain",
+              filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.2))",
+              flexShrink: 0,
+            }}
+          />
+          <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.75 }}>
+            <Typography
+              variant="h6"
+              component="span"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: "0.5px",
+                color: "#ffffff",
+                fontSize: { xs: "1.05rem", sm: "1.25rem" },
+                lineHeight: 1,
+              }}
+            >
+              {BRANDING.companyName}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 600,
+                color: "rgba(255, 255, 255, 0.9)",
+                fontSize: { xs: "0.85rem", sm: "1rem" },
+                letterSpacing: "0.5px",
+                lineHeight: 1,
+              }}
+            >
+              {BRANDING.productName}
+            </Typography>
+          </Box>
+        </Box>
 
         {/* User Info */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -120,6 +167,8 @@ export default function Navbar({ onMenuClick }) {
             sx={{
               display: { xs: "none", sm: "block" },
               mr: 1,
+              color: "#ffffff",
+              fontWeight: 500,
             }}
           >
             {getDisplayName()}

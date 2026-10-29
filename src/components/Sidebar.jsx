@@ -45,6 +45,7 @@ import {
   deleteAllMessagesForConversation,
 } from "../api/chatApi";
 import { getAllProjects } from "../api/projectApi";
+import { BRANDING } from "../config/branding";
 
 const drawerWidth = 240;
 
@@ -763,6 +764,19 @@ export default function Sidebar({
             Contact Support
           </Box>
         </Box>
+        <Typography
+          variant="caption"
+          sx={{
+            display: "block",
+            textAlign: "center",
+            mt: 1.5,
+            color: "text.secondary",
+            fontSize: "0.7rem",
+            opacity: 0.85,
+          }}
+        >
+          © 2026 {BRANDING.companyName}. All rights reserved.
+        </Typography>
       </Box>
     </Box>
   );
