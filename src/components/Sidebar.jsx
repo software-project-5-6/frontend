@@ -46,6 +46,7 @@ import {
 } from "../api/chatApi";
 import { getAllProjects } from "../api/projectApi";
 import { BRANDING } from "../config/branding";
+import ContactSupportDialog from "./ContactSupportDialog";
 
 const drawerWidth = 240;
 
@@ -62,6 +63,7 @@ export default function Sidebar({
   const { userRole, isAdmin } = useAuth();
 
   const [expanded, setExpanded] = useState(() => location.pathname === "/");
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const [openNewChatDialog, setOpenNewChatDialog] = useState(false);
   const [chatTitle, setChatTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -744,16 +746,33 @@ export default function Sidebar({
 
       <Box sx={{ px: 2, pb: 2 }}>
         <Box
+          component="button"
+          type="button"
+          onClick={() => {
+            if (mobileOpen && onMobileClose) onMobileClose();
+            setSupportDialogOpen(true);
+          }}
+          aria-label="Contact Majstro Support"
           sx={{
+            width: "100%",
+            border: "none",
+            outline: "none",
+            fontFamily: "inherit",
             p: 2,
             borderRadius: 2,
             background: gradients.primary,
             color: "white",
             textAlign: "center",
             cursor: "pointer",
-            transition: "transform 0.2s",
+            transition: "transform 0.2s, box-shadow 0.2s",
+            boxShadow: 2,
+            display: "block",
             "&:hover": {
               transform: "translateY(-2px)",
+              boxShadow: 4,
+            },
+            "&:focus-visible": {
+              boxShadow: (theme) => `0 0 0 3px ${theme.palette.primary.light}`,
             },
           }}
         >
@@ -826,6 +845,11 @@ export default function Sidebar({
       >
         {drawer}
       </Drawer>
+
+      <ContactSupportDialog
+        open={supportDialogOpen}
+        onClose={() => setSupportDialogOpen(false)}
+      />
     </Box>
   );
 }

@@ -5,7 +5,6 @@ import {
   TextField,
   Button,
   Typography,
-  Card,
   CircularProgress,
   Box,
   InputAdornment,
@@ -24,22 +23,40 @@ export default function Login() {
   const location = useLocation();
   const { refreshAuth } = useAuth();
 
-  
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    if (loading) return;
+
+    if (!email.trim() || !password) {
+      setMessage("❌ Please enter both email and password.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
       if (error) {
         if (error.message?.toLowerCase().includes("email not confirmed")) {
           setMessage("⚠️ Your account is not verified. Redirecting...");
           setTimeout(() => {
-            navigate("/confirm-signup", { state: { email, fromLogin: true } });
+            navigate("/confirm-signup", {
+              state: { email: email.trim(), fromLogin: true },
+            });
           }, 2000);
         } else {
-          setMessage("❌ " + (error.message || "Login failed. Please check your credentials."));
+          setMessage(
+            "❌ " +
+              (error.message ||
+                "Login failed. Please check your credentials.")
+          );
         }
         return;
       }
@@ -56,7 +73,10 @@ export default function Login() {
         }
       }
     } catch (error) {
-      setMessage("❌ " + (error.message || "Login failed. Please check your credentials."));
+      setMessage(
+        "❌ " +
+          (error.message || "Login failed. Please check your credentials.")
+      );
     } finally {
       setLoading(false);
     }
@@ -87,71 +107,90 @@ export default function Login() {
           : "Sign in to your account to continue"}
       </Typography>
 
-      <TextField
-        label="Email"
-        fullWidth
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        margin="dense"
-        size="small"
-        sx={{
-          mb: 1.5,
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-          },
-        }}
-      />
-      <TextField
-        label="Password"
-        type={showPassword ? "text" : "password"}
-        fullWidth
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        margin="dense"
-        size="small"
-        sx={{
-          mb: 1.5,
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-          },
-        }}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={() => setShowPassword(!showPassword)}
-                edge="end"
-                size="small"
-              >
-                {showPassword ? <Visibility /> : <VisibilityOff />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      <Button
-        fullWidth
-        variant="contained"
-        color="primary"
-        sx={{
-          mt: 1,
-          py: 1,
-          borderRadius: 2,
-          textTransform: "none",
-          fontWeight: 600,
-          fontSize: { xs: "0.9rem", sm: "1rem" },
-          boxShadow: 2,
-          "&:hover": {
-            boxShadow: 4,
-          },
-        }}
-        onClick={handleLogin}
-        disabled={loading}
+      {/* Form supporting keyboard Enter submission */}
+      <Box
+        component="form"
+        onSubmit={handleLogin}
+        noValidate
+        sx={{ width: "100%" }}
       >
-        {loading ? <CircularProgress size={24} color="inherit" /> : "Sign In"}
-      </Button>
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          fullWidth
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          margin="dense"
+          size="small"
+          disabled={loading}
+          sx={{
+            mb: 1.5,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+            },
+          }}
+        />
+
+        <TextField
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          fullWidth
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          margin="dense"
+          size="small"
+          disabled={loading}
+          sx={{
+            mb: 1.5,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+            },
+          }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                  size="small"
+                  disabled={loading}
+                >
+                  {showPassword ? <Visibility /> : <VisibilityOff />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          color="primary"
+          sx={{
+            mt: 1,
+            py: 1,
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: { xs: "0.9rem", sm: "1rem" },
+            boxShadow: 2,
+            "&:hover": {
+              boxShadow: 4,
+            },
+          }}
+          disabled={loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "Sign In"
+          )}
+        </Button>
+      </Box>
 
       {message && (
         <Typography
